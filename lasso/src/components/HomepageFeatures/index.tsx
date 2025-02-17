@@ -14,7 +14,7 @@ const FeatureList: FeatureItem[] = [
   {
     title: 'Test-Driven Software Experimentation with LSL',
     //Svg: require('@site/static/img/undraw_services_re_hu5n.svg').default,
-    image: '/img/features/services.png',
+    image: 'img/features/services.png',
     description: (
       <>
         Utilize LSL (LASSO Scripting Language) for customizable code analysis services, including Code Search and Generation (via LLMs), Test Generation, and Study Designs, enabling reproducible research in software engineering.
@@ -25,7 +25,7 @@ const FeatureList: FeatureItem[] = [
   {
     title: 'Data Structures - Storing Observations for Big Code',
     //Svg: require('@site/static/img/undraw_services_re_hu5n.svg').default,
-    image: '/img/features/datastructures.png',
+    image: 'img/features/datastructures.png',
     description: (
       <>
         LASSO's core building blocks include: Use Sequence Sheets (SSNs) as test specifications, Stimulus Response Matrices (SRMs) for configurations of tests and implementations, and Stimulus Response Hypercubes (SRHs) for software analytics of behavior.
@@ -36,7 +36,7 @@ const FeatureList: FeatureItem[] = [
   {
     title: 'Behavior-aware Software Analytics',
     //Svg: require('@site/static/img/undraw_services_re_hu5n.svg').default,
-    image: '/img/features/analytics.png',
+    image: 'img/features/analytics.png',
     description: (
       <>
         Conduct extensive, behavior-aware <a href="docs/analytics/data">software analytics</a> based on observations stored in SRHs in your favorite data analytics tools. This includes establishing functional correctness across code candidates as well as behavioral clustering based on observed behavior (i.e., outputs).
@@ -47,7 +47,7 @@ const FeatureList: FeatureItem[] = [
   {
     title: 'Free Software - Open, Extensible and Fosters Sharability',
     //Svg: require('@site/static/img/undraw_services_re_hu5n.svg').default,
-    image: '/img/features/services_dag.png',
+    image: 'img/features/services_dag.png',
     description: (
       <>
         The platform is extensible. Extend it with your own tools and techniques via well-defined APIs and state-of-the-art tools (i.e., containerization). The platform and its data complies with open research principles and fosters sharability of pipelines and results.

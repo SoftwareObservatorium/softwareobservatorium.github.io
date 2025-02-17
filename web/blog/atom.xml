@@ -1,16 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <feed xmlns="http://www.w3.org/2005/Atom">
-    <id>https://softwareobservatorium.github.io/blog</id>
+    <id>https://softwareobservatorium.github.io/web/blog</id>
     <title>LASSO Blog</title>
     <updated>2025-02-17T00:00:00.000Z</updated>
     <generator>https://github.com/jpmonette/feed</generator>
-    <link rel="alternate" href="https://softwareobservatorium.github.io/blog"/>
+    <link rel="alternate" href="https://softwareobservatorium.github.io/web/blog"/>
     <subtitle>LASSO Blog</subtitle>
-    <icon>https://softwareobservatorium.github.io/img/favicon.ico</icon>
+    <icon>https://softwareobservatorium.github.io/web/img/favicon.ico</icon>
     <entry>
         <title type="html"><![CDATA[(WIP) Arena Test Driver for Python Available]]></title>
-        <id>https://softwareobservatorium.github.io/blog/arena-python</id>
-        <link href="https://softwareobservatorium.github.io/blog/arena-python"/>
+        <id>https://softwareobservatorium.github.io/web/blog/arena-python</id>
+        <link href="https://softwareobservatorium.github.io/web/blog/arena-python"/>
         <updated>2025-02-17T00:00:00.000Z</updated>
         <summary type="html"><![CDATA[We're excited to share that our efforts to support Python in the LASSO platform are gaining momentum! A first version of the arena test driver for Python is now available on GitHub, accessible at https://github.com/SoftwareObservatorium/arena-python.]]></summary>
         <content type="html"><![CDATA[<p>We're excited to share that our efforts to support Python in the LASSO platform are gaining momentum! A first version of the arena test driver for Python is now available on GitHub, accessible at <a href="https://github.com/SoftwareObservatorium/arena-python" target="_blank" rel="noopener noreferrer">https://github.com/SoftwareObservatorium/arena-python</a>.</p>
@@ -39,8 +39,8 @@
     </entry>
     <entry>
         <title type="html"><![CDATA[Introducing the New Project Website!]]></title>
-        <id>https://softwareobservatorium.github.io/blog/new-project-website</id>
-        <link href="https://softwareobservatorium.github.io/blog/new-project-website"/>
+        <id>https://softwareobservatorium.github.io/web/blog/new-project-website</id>
+        <link href="https://softwareobservatorium.github.io/web/blog/new-project-website"/>
         <updated>2025-02-01T00:00:00.000Z</updated>
         <summary type="html"><![CDATA[Exciting news, everyone! We are thrilled to announce the launch of the brand new website for LASSO, the Large-Scale Software Observatorium for the Dynamic Selection, Analysis and Comparison of Software.]]></summary>
         <content type="html"><![CDATA[<p>Exciting news, everyone! We are thrilled to announce the launch of the brand new website for LASSO, the Large-Scale Software Observatorium for the Dynamic Selection, Analysis and Comparison of Software.</p>
@@ -57,7 +57,7 @@
 <li>Foster a stronger sense of community around the project.</li>
 <li>Encourage contributions and collaboration from developers and users alike.</li>
 </ul>
-<p>Explore everything LASSO has to offer. We encourage you to leave your feedback, ask questions, and join the growing community of LASSO users (<a href="https://softwareobservatorium.github.io/contact">Contact Us</a>).</p>]]></content>
+<p>Explore everything LASSO has to offer. We encourage you to leave your feedback, ask questions, and join the growing community of LASSO users (<a href="https://softwareobservatorium.github.io/web/contact">Contact Us</a>).</p>]]></content>
         <author>
             <name>Marcus Kessel</name>
             <uri>https://www.wim.uni-mannheim.de/atkinson/team/dr-marcus-kessel/</uri>

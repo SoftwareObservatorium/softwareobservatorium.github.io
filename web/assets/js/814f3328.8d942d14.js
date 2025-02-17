@@ -1,1 +1,0 @@
-"use strict";(self.webpackChunklasso=self.webpackChunklasso||[]).push([[7472],{5513:e=>{e.exports=JSON.parse('{"title":"Recent posts","items":[{"title":"(WIP) Arena Test Driver for Python Available","permalink":"/blog/arena-python","unlisted":false},{"title":"Introducing the New Project Website!","permalink":"/blog/new-project-website","unlisted":false}]}')}}]);

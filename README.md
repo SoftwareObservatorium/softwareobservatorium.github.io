@@ -16,6 +16,8 @@ pip install jupyterlite-core
 jupyter lite --version
 pip install jupyterlite-core[all] 
 pip install jupyterlite-pyodide-kernel
+# optional
+pip install jupyterlab-open-url-parameter
 
 
 mkdir files

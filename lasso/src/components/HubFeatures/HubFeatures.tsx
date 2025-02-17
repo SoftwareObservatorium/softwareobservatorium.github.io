@@ -39,7 +39,7 @@ study(name: 'HelloWorld') {
     }
 }
             `,
-            srmpath: "/srm/HELLO_WORLD_QUICKSTART.parquet",
+            srmpath: "./srm/HELLO_WORLD_QUICKSTART.parquet",
             classifier: "quickstart, example"
         },
         BASE64_ENCODE_DECODE_MAVEN: {
@@ -84,7 +84,7 @@ study(name: 'Base64encodedecode') {
     }
 }
             `,
-            srmpath: "/srm/BASE64_ENCODE_DECODE_MAVEN.parquet",
+            srmpath: "./srm/BASE64_ENCODE_DECODE_MAVEN.parquet",
             classifier: "example"
         },
         BOUNDED_QUEUE_MUTATION: {
@@ -134,7 +134,7 @@ study(name: 'BoundedQueue-Mutation') {
     }
 }
             `,
-            srmpath: "/srm/BOUNDED_QUEUE_MUTATION.parquet",
+            srmpath: "./srm/BOUNDED_QUEUE_MUTATION.parquet",
             classifier: "example"
         },
         OPENAI_GEN: {
@@ -205,7 +205,7 @@ study(name: 'ChatGPT') {
     }
 }
             `,
-            srmpath: "/srm/OPENAI_GEN.parquet",
+            srmpath: "./srm/OPENAI_GEN.parquet",
             classifier: "example"
         },
         OLLAMA_GEN: {
@@ -286,7 +286,7 @@ study(name: 'Ollama-Parallel') {
     }
 }
             `,
-            srmpath: "/srm/OLLAMA_GEN.parquet",
+            srmpath: "./srm/OLLAMA_GEN.parquet",
             classifier: "example"
         },
         TDS: {
@@ -342,7 +342,7 @@ study(name: 'TDS-Base64encode') {
     }
 }
             `,
-            srmpath: "/srm/TDS.parquet",
+            srmpath: "./srm/TDS.parquet",
             classifier: "example"
         }
     }

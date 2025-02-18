@@ -1,6 +1,10 @@
+---
+sidebar_position: 3
+---
+
 # LSL - LASSO Scripting Language (Version 2)
 
-## Anotomy of an LSL Script
+## Anatomy of an LSL Script
 
 ```groovy
 // HEADER: global study configuration

@@ -17,7 +17,7 @@ const FeatureList: FeatureItem[] = [
     image: 'img/features/services.png',
     description: (
       <>
-        Utilize LSL (LASSO Scripting Language) for customizable code analysis services, including Code Search and Generation (via LLMs), Test Generation, and Study Designs, enabling reproducible research in software engineering.
+        Utilize <a href="hub">LSL (LASSO Scripting Language)</a> for customizable code analysis services, including Code Search and Generation (via LLMs), Test Generation, and Study Designs, enabling reproducible research in software engineering.
       </>
     ),
     position: true,
@@ -28,7 +28,7 @@ const FeatureList: FeatureItem[] = [
     image: 'img/features/datastructures.png',
     description: (
       <>
-        LASSO's core building blocks include: Use Sequence Sheets (SSNs) as test specifications, Stimulus Response Matrices (SRMs) for configurations of tests and implementations, and Stimulus Response Hypercubes (SRHs) for software analytics of behavior.
+        LASSO's core building blocks include: Use <a href="pdfviewer?f=L9-Sequence-Sheets-24.pdf">Sequence Sheets (SSNs)</a> as test specifications, <a href="pdfviewer?f=L10-Test-Driven-Software-Experimentation-24.pdf">Stimulus Response Matrices (SRMs)</a> for configurations of tests and implementations, and Stimulus Response Hypercubes (SRHs) for software analytics of behavior.
       </>
     ),
     position: false,
@@ -50,7 +50,7 @@ const FeatureList: FeatureItem[] = [
     image: 'img/features/services_dag.png',
     description: (
       <>
-        The platform is extensible. Extend it with your own tools and techniques via well-defined APIs and state-of-the-art tools (i.e., containerization). The platform and its data complies with open research principles and fosters sharability of pipelines and results.
+        The platform is extensible. Extend it with your own tools and techniques via well-defined APIs and state-of-the-art tools (i.e., containerization). The platform and its data complies with <a href="https://www.sciencedirect.com/science/article/pii/S0164121224000141">open research principles</a> and fosters sharability of pipelines and results.
       </>
     ),
     position: false,

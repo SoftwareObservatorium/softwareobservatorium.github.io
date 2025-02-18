@@ -12,6 +12,8 @@ import CardBody from '../components/SimpleCard/CardBody';
 import CardFooter from '../components/SimpleCard/CardFooter';
 import CardImage from '../components/SimpleCard/CardImage';
 
+import CookieConsent from "react-cookie-consent";
+
 function HomepageHeader() {
   const {siteConfig} = useDocusaurusContext();
   const recentPosts = require("../../.docusaurus/docusaurus-plugin-content-blog/default/blog-post-list-prop-default.json");
@@ -125,6 +127,7 @@ export default function Home(): JSX.Element {
           </div>
         </section>
         <HomepageFeatures />
+        <CookieConsent>This website uses cookies to enhance the user experience.</CookieConsent>
       </main>
     </Layout>
   );

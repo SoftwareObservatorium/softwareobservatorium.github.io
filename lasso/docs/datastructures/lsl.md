@@ -4,6 +4,16 @@ sidebar_position: 3
 
 # LSL - LASSO Scripting Language (Version 2)
 
+## Pipelines
+
+LSL pipeline scripts are composed of actions (i.e., analysis steps) that facilitate the creation, reading, updating, or deletion of stimulus matrices. 
+
+For a visual illustration of how LSL pipelines process stimulus response matrices and to gain a deeper understanding of this concept, please refer to our introductory documentation available [here](/web/pdfviewer?f=intro.pdf).
+
+# LSL - LASSO Scripting Language (Version 2)
+
+(in progress)
+
 ## Anatomy of an LSL Script
 
 ```groovy

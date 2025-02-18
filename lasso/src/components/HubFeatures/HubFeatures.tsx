@@ -289,50 +289,46 @@ study(name: 'Ollama-Parallel') {
             srmpath: "/web/srm/OLLAMA_GEN.parquet",
             classifier: "example"
         },
-        TDS: {
-            label: "Test-Driven Code Search",
-            description: "Explore how LASSO can be used to offer test-driven code search using interface-driven code retrieval",
+        STACK_PARAMETERIZED: {
+            label: "Parameterized Sequence Sheets",
+            description: "Explore how sequence sheets can be parameterized (here using an example of Stack implementations)",
             lsl: `dataSource 'lasso_quickstart'
-dataSource 'lasso_quickstart'
-study(name: 'TDS-Base64encode') {
+// interface in LQL notation
+def interfaceSpec = """Stack {
+    push(java.lang.String)->java.lang.String
+    size()->int
+}
+"""
+study(name: 'Stack') {
 
-    action(name: 'createStimulusMatrix') {
-        execute {
-            stimulusMatrix('Base64', """Base64{
-                    encode(byte[])->byte[]
-                    decode(java.lang.String)->byte[]
-                }
-                """, [/*impls*/], [ // tests
-                                    test(name: 'testEncode()') {
-                                        row '', 'create', 'Base64'
-                                        row '"dXNlcjpwYXNz".getBytes()', 'encode', 'A1', '"user:pass".getBytes()'
-                                    },
-                                    test(name: 'testEncode_padding()') {
-                                        row '', 'create', 'Base64'
-                                        row '"SGVsbG8gV29ybGQ=".getBytes()', 'encode', 'A1', '"Hello World".getBytes()'
-                                    }])
-        }
+    action(name: 'create') {
+        stimulusMatrix('Stack', interfaceSpec, // abstraction details
+                [ // implementations
+                  implementation("1", "java.util.Stack"),
+                  implementation("2", "java.util.ArrayDeque"),
+                  implementation("3", "java.util.LinkedList")
+                ],
+                [ // tests
+                  test(name: 'testPush()') {
+                      row '', 'create', 'Stack'
+                      row '', 'push', 'A1', '"Hi"'
+                      row '', 'size', 'A1'
+                  },
+                  test(name: 'testPushParameterized(p1=java.lang.String)', p1: "Hello World!") {
+                      row '', 'create', 'Stack'
+                      row '', 'push', 'A1', '?p1'
+                      row '', 'size', 'A1'
+                  },
+                  test(name: 'testPushParameterized(p1=java.lang.String)', p1: "Bla blub!") // e.g., parameterized
+                ]
+        )
     }
 
-    /* select class candidates using interface-driven code search */
-    action(name: 'select', type: 'Search') {
-        dependsOn 'createStimulusMatrix'
-        include '*'
-
-        query { stimulusMatrix ->
-            def query = [:] // create query model
-            query.queryContent = stimulusMatrix.lql
-            query.rows = 1
-            return [query] // list of queries is expected
-        }
-    }
-    /* filter candidates by two tests (test-driven code filtering) */
-    action(name: 'filter', type: 'Arena') { // filter by tests
-        features = ['cc'] // enable code coverage measurement (class scope)
+    action(name: 'test', type: 'Arena') { // run all tests
         maxAdaptations = 1 // how many adaptations to try
 
-        dependsOn 'select'
-        include 'Base64'
+        dependsOn 'create'
+        include 'Stack'
         profile('java17Profile') {
             scope('class') { type = 'class' }
             environment('java17') {
@@ -342,8 +338,324 @@ study(name: 'TDS-Base64encode') {
     }
 }
             `,
-            srmpath: "/web/srm/TDS.parquet",
+            srmpath: "/web/srm/STACK_PARAMETERIZED.parquet",
             classifier: "example"
+        },
+        STACK_TYPEAWARETEST: {
+            label: "Type-aware Test Mutation",
+            description: "Explore how existing sequence sheets can be mutated",
+            lsl: `dataSource 'lasso_quickstart'
+// interface in LQL notation
+def interfaceSpec = """Stack {
+    push(java.lang.String)->java.lang.String
+    size()->int
+}
+"""
+study(name: 'Stack') {
+
+    profile('java17Profile') {
+        scope('class') { type = 'class' }
+        environment('java17') {
+            image = 'maven:3.9-eclipse-temurin-17' // docker image (JDK 17)
+        }
+    }
+
+    action(name: 'select') {
+        stimulusMatrix('Stack', interfaceSpec, // abstraction details
+                [ // implementations
+                  implementation("1", "java.util.Stack"),
+                  implementation("2", "java.util.ArrayDeque"),
+                  implementation("3", "java.util.LinkedList")
+                ],
+                [ // tests
+                  test(name: 'testPush()') {
+                      row '',  'create', 'Stack'
+                      row '',  'push',   'A1',     '"Hi"'
+                      row '',  'size',   'A1'
+                  },
+                  test(name: 'testPushParameterized(p1=java.lang.String)', p1: "Hello World!") {
+                      row '',  'create', 'Stack'
+                      row '',  'push',   'A1',     '?p1'
+                      row '',  'size',   'A1'
+                  },
+                  test(name: 'testPushParameterized(p1=java.lang.String)', p1: "Bla blub!") // e.g., parameterized
+                ]
+        )
+    }
+
+    action(name: 'typeAware', type: 'TypeAwareMutatorTestGen') { // add more tests
+        noOfTests = 1 // create one mutation per test
+
+        dependsOn 'select'
+        include 'Stack'
+    }
+
+    action(name: 'test', type: 'Arena') { // run all tests
+        maxAdaptations = 1 // how many adaptations to try
+
+        dependsOn 'typeAware'
+        include 'Stack'
+        profile('java17Profile')
+    }
+}
+            `,
+            srmpath: "/web/srm/STACK_TYPEAWARETEST.parquet",
+            classifier: "example"
+        },
+        DGAI_LLM: {
+            label: "Differential GAI with many Test Generators and LLMs (LLAMA and DeepSeek-R1)",
+            description: "Explore how LASSO can be used to realized Differential GAI",
+            lsl: `dataSource 'lasso_quickstart'
+study(name: 'DGAI') {
+
+    // profile for execution
+    profile('java17Profile') {
+        scope('class') { type = 'class' }
+        environment('java17') {
+            image = 'maven:3.9-eclipse-temurin-17'
+        }
+    }
+
+    // profile for execution
+    profile('java11Profile') {
+        scope('class') { type = 'class' }
+        environment('java17') {
+            image = 'maven:3.6.3-openjdk-11' // EvoSuite won't run in > JDK 11
+        }
+    }
+
+    // load benchmark
+    def humanEval = loadBenchmark("humaneval-java-reworded")
+
+    action(name: "createStimulusMatrices") {
+        execute {
+            // create stimulus matrices for given problems
+            def myProblems = [humanEval.abstractions['HumanEval_13_greatest_common_divisor']]
+            myProblems.each { problem ->
+                stimulusMatrix(problem.id, problem.lql, [/*impls*/], problem.tests) // id, interface, impls, tests
+            }
+        }
+    }
+
+    action(name: 'generateCodeLlama', type: 'GenerateCodeOllama') {
+        // pipeline specific
+        dependsOn 'createStimulusMatrices'
+        include '*'
+        profile('java11Profile') // evosuite 11
+
+        // action configuration block
+        ollamaBaseUrl = "http://bagdana.informatik.uni-mannheim.de:11434"
+        model = "llama3.1:latest"
+        samples = 10 // how many to sample
+        javaVersion = "11" // because of EvoSuite ..
+
+        prompt { stimulusMatrix ->
+            def prompt = [:] // create prompt model
+            prompt.promptContent = """implement a java class with the following interface specification, but do not inherit a java interface: \`\`\`\${stimulusMatrix.lql}\`\`\`. Only output the java class and nothing else."""
+            prompt.id = "lql_prompt"
+            return [prompt] // list of prompts is expected
+        }
+    }
+
+    action(name: 'generateCodeDeepSeek', type: 'GenerateCodeOllama') {
+        // pipeline specific
+        dependsOn 'generateCodeLlama'
+        include '*'
+        profile('java11Profile') // evosuite 11
+
+        // action configuration block
+        ollamaBaseUrl = "http://bagdana.informatik.uni-mannheim.de:11434"
+        model = "deepseek-r1:32b"
+        samples = 10 // how many to sample
+        javaVersion = "11" // because of EvoSuite ..
+
+        prompt { stimulusMatrix ->
+            def prompt = [:] // create prompt model
+            prompt.promptContent = """implement a java class with the following interface specification, but do not inherit a java interface: \`\`\`\${stimulusMatrix.lql}\`\`\`. Only output the java class and nothing else."""
+            prompt.id = "lql_prompt"
+            return [prompt] // list of prompts is expected
+        }
+    }
+
+    // add tests (mutates existing tests)
+    action(name: 'typeAware', type: 'TypeAwareMutatorTestGen') { // add more tests
+        noOfTests = 1 // create one mutation per test
+
+        dependsOn 'generateCodeDeepSeek'
+        include '*'
+    }
+
+    // add tests: randomly add new
+    action(name: 'random', type: 'RandomTestGen') { // add more tests
+        noOfTests = 5 // create 5 additional random tests
+        shuffleSequence = false
+
+        dependsOn 'typeAware'
+        include '*'
+    }
+
+    action(name: 'generateTestsLlama', type: 'GenerateTestsOllama') {
+        // pipeline specific
+        dependsOn 'random'
+        include '*'
+        profile('java17Profile')
+
+        // action configuration block
+        ollamaBaseUrl = "http://bagdana.informatik.uni-mannheim.de:11434"
+        model = "llama3.1:latest"
+        samples = 10 // how many to sample
+
+        prompt { stimulusMatrix ->
+            def prompt = [:] // create prompt model
+            prompt.promptContent = """generate a junit test class to test the functionality of the following interface specification: \`\`\`\${stimulusMatrix.lql}\`\`\`. Assume that the specification is encapsulated in a class that uses the same naming as in the interface specification. Only output the JUnit test class and nothing else."""
+            prompt.id = "lql_prompt"
+            return [prompt] // list of prompts is expected
+        }
+    }
+
+    action(name: 'generateTestsDeepSeek', type: 'GenerateTestsOllama') {
+        // pipeline specific
+        dependsOn 'generateTestsLlama'
+        include '*'
+        profile('java17Profile')
+
+        // action configuration block
+        ollamaBaseUrl = "http://bagdana.informatik.uni-mannheim.de:11434"
+        model = "deepseek-r1:32b"
+        samples = 10 // how many to sample
+
+        prompt { stimulusMatrix ->
+            def prompt = [:] // create prompt model
+            prompt.promptContent = """generate a junit test class to test the functionality of the following interface specification: \`\`\`\${stimulusMatrix.lql}\`\`\`. Assume that the specification is encapsulated in a class that uses the same naming as in the interface specification. Only output the JUnit test class and nothing else."""
+            prompt.id = "lql_prompt"
+            return [prompt] // list of prompts is expected
+        }
+    }
+
+    // add tests: SBST
+    action(name: 'evoSuite', type: 'EvoSuite') {
+        searchBudget = 60 // we need this as upper bound for timeouts
+        stoppingCondition = "MaxTime"
+        //criterion = "LINE:BRANCH:EXCEPTION:WEAKMUTATION:OUTPUT:METHOD:METHODNOEXCEPTION:CBRANCH"
+        cleanExecutables = false
+
+        dependsOn 'generateTestsDeepSeek'
+        include '*'
+        profile('java11Profile')
+    }
+
+    action(name: 'execute', type: 'Arena') { // run all collected stimulus sheets in arena
+        maxAdaptations = 1 // how many adaptations to try
+        //features = ["cc", "mutation"]
+
+        dependsOn 'evoSuite'
+        include '*'
+        profile('java17Profile')
+    }
+}
+            `,
+            srmpath: "/web/srm/DGAI.parquet",
+            classifier: "dgai, example"
+        },
+        BENCHMARK_CODELLM: {
+            label: "Replication of HumanEval-J/MBPP-J Benchmark",
+            description: "Explore how LASSO can be used to replicate studies and reuse their designs, here based on the example of HumanEval-J (MultiPL-E)",
+            lsl: `dataSource 'lasso_quickstart'
+study(name: 'HumanEval-OriginalPrompt-ShowCode') {
+
+    // profile for execution
+    profile('java17Profile') {
+        scope('class') { type = 'class' }
+        environment('java17') {
+            image = 'maven:3.9-eclipse-temurin-17'
+        }
+    }
+
+    // load benchmark
+    def humanEval = loadBenchmark("humaneval-java-reworded")
+    def mbpp = loadBenchmark("mbpp-java-reworded")
+
+    action(name: "createStimulusMatrices") {
+        execute {
+            // create stimulus matrices for given problems
+            humanEval.abstractions.values().each { problem ->
+                stimulusMatrix(problem.id, problem.lql, [/*impls*/], problem.tests, problem.dependencies) // id, interface, impls, tests, dependencies
+            }
+
+            mbpp.abstractions.values().each { problem ->
+                stimulusMatrix(problem.id, problem.lql, [/*impls*/], problem.tests, problem.dependencies) // id, interface, impls, tests, dependencies
+            }
+        }
+    }
+
+    action(name: 'generateCodeLlama', type: 'GenerateCodeOllama') {
+        // pipeline specific
+        dependsOn 'createStimulusMatrices'
+        include '*'
+        profile('java17Profile')
+
+        // action configuration block 
+        servers = ["http://bagdana.informatik.uni-mannheim.de:11434", "http://dybbuk.informatik.uni-mannheim.de:11434"]
+        model = "llama3.1:latest"
+        samples = 10 // how many to sample
+        javaVersion = "17" // because of EvoSuite ..
+
+        promptRequestThreads = 4 // parallel threads
+
+        prompt { stimulusMatrix ->
+            def prompt = [:] // create prompt model
+            // get original prompt from benchmark
+            prompt.promptContent = humanEval.abstractions[stimulusMatrix.name].prompt
+            prompt.id = "lql_prompt"
+            return [prompt] // list of prompts is expected
+        }
+    }
+
+    action(name: 'measureCoverage', type: 'Arena') { // run all collected stimulus sheets in arena
+        maxAdaptations = 1 // how many adaptations to try
+        features = ["cc"]
+
+        dependsOn 'generateCodeLlama'
+        include '*'
+        profile('java17Profile')
+    }
+
+    action(name: 'generateTestsLlama', type: 'GenerateTestsOllama') {
+        // pipeline specific
+        dependsOn 'measureCoverage'
+        include '*'
+        profile('java17Profile')
+
+        // action configuration block 
+        servers = ["http://bagdana.informatik.uni-mannheim.de:11434", "http://dybbuk.informatik.uni-mannheim.de:11434"]
+        model = "llama3.1:latest"
+        samples = 1 // how many to sample
+        promptRequestThreads = 4 // parallel threads
+
+        prompt { stimulusMatrix ->
+            List prompts = stimulusMatrix.implementations.collect { impl ->
+                def prompt = [:] // create prompt model
+                prompt.promptContent = """generate a junit test class to test the functionality of the following java class \`\${impl.code.name}\` : \`\`\`\${impl.code.content}\`\`\`. Initialize the class and call its methods. Only output the JUnit test class and nothing else."""
+                prompt.id = "lql_prompt"
+                return prompt
+            }
+
+            return prompts
+        }
+    }
+
+    action(name: 'execute', type: 'Arena') { // run all collected stimulus sheets in arena
+        maxAdaptations = 1 // how many adaptations to try
+        features = ["cc"]
+
+        dependsOn 'generateTestsLlama'
+        include '*'
+        profile('java17Profile')
+    }
+}
+            `,
+            srmpath: "/web/srm/HUMANEVAL.parquet",
+            classifier: "benchmark, replication, humaneval, mbpp, example"
         }
     }
 };

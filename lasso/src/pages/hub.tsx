@@ -21,11 +21,11 @@ const HubPage = () => {
     setShowLslEditor(true)
     setShowSrmAnalysis(false)
 
-    if(editorRef.current) {
+    if (editorRef.current) {
       editorRef.current.getModel().setValue(HubExamples.MAP[exampleId].lsl);
     }
 
-    window.scrollTo({ top: 0, left: 0})
+    window.scrollTo({ top: 0, left: 0 })
   };
 
   const handleSRMClick = (exampleId: string) => {
@@ -34,11 +34,11 @@ const HubPage = () => {
     setShowLslEditor(false)
     setShowSrmAnalysis(true)
 
-    if(editorRef.current) {
+    if (editorRef.current) {
       editorRef.current.getModel().setValue(HubExamples.MAP[exampleId].lsl);
     }
 
-    window.scrollTo({ top: 0, left: 0})
+    window.scrollTo({ top: 0, left: 0 })
   };
 
   const editorRef = useRef<any>(null);
@@ -58,13 +58,13 @@ const HubPage = () => {
         <meta name="description" content="A hub for TDSEs" />
       </Head>
 
-      <Typography sx={{margin: 2}} variant="h5" component="div">TDSEHub<Typography variant="h6" component="div">Explore LSL Pipelines and their SRMs</Typography></Typography>
-      
+      <Typography sx={{ margin: 2 }} variant="h5" component="div">TDSEHub<Typography variant="h6" component="div">Explore LSL Pipelines and their SRMs</Typography></Typography>
+
 
       <Grid container spacing={2}>
 
         <Grid size={3}>
-        {/* <Box style={{maxHeight: '100vh', overflow: 'auto'}}> */}
+          {/* <Box style={{maxHeight: '100vh', overflow: 'auto'}}> */}
           {Object.keys(HubExamples.MAP).map((key) => (
             <><Card sx={{ minWidth: 275, margin: 2 }}>
               <CardContent>
@@ -86,13 +86,14 @@ const HubPage = () => {
           {/* </Box> */}
         </Grid>
         <Grid size={9}>
-          { currentExampleId ? <Typography sx={{margin: 2}} variant="h5" component="div"><Typography variant="h6" component="div">Study '{HubExamples.MAP[currentExampleId].label}'</Typography></Typography> : null }
+          {currentExampleId ? <Typography sx={{ margin: 2 }} variant="h5" component="div"><Typography variant="h6" component="div">Study '{HubExamples.MAP[currentExampleId].label}'</Typography></Typography> : null}
 
           {showLslEditor ?
             <><CardContent>
-      <Typography sx={{margin: 2}} variant="h5" component="div">LSL Pipeline Viewer<Typography variant="h6" component="div">Explore the study and actions</Typography></Typography>
-      
+              <Typography sx={{ margin: 2 }} variant="h5" component="div">LSL Pipeline Viewer<Typography variant="h6" component="div">Explore the study and actions</Typography></Typography>
+              <Typography sx={{ color: 'text.secondary', mb: 1.5 }}>{HubExamples.MAP[currentExampleId].description}</Typography>
               <Typography variant="h5" component="div">
+                <Button sx={{ float: "right" }} disabled>Try (coming soon)</Button>
                 <Editor
                   height="500px"
                   defaultLanguage="java"

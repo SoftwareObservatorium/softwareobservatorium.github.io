@@ -45,7 +45,7 @@ const FeatureList: FeatureItem[] = [
     position: true,
   },
   {
-    title: 'Free Software - Open, Extensible and Fosters Sharability',
+    title: 'Open, Extensible Platform that Fosters Sharability',
     //Svg: require('@site/static/img/undraw_services_re_hu5n.svg').default,
     image: 'img/features/services_dag.png',
     description: (

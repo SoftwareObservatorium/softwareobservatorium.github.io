@@ -146,7 +146,7 @@ study(name: 'ChatGPT') {
     // load benchmark
     def humanEval = loadBenchmark("humaneval-java-reworded")
 
-    action(name: "createStimulusMatrices") {
+    action(name: 'createStimulusMatrices') {
         execute {
             // create stimulus matrices for given problems
             def myProblems = [humanEval.abstractions['HumanEval_13_greatest_common_divisor']]
@@ -225,7 +225,7 @@ study(name: 'Ollama-Parallel') {
     // load benchmark
     def humanEval = loadBenchmark("humaneval-java-reworded")
 
-    action(name: "createStimulusMatrices") {
+    action(name: 'createStimulusMatrices') {
         execute {
             // create stimulus matrices for given problems
             def myProblems = [humanEval.abstractions['HumanEval_13_greatest_common_divisor']]
@@ -427,7 +427,7 @@ study(name: 'DGAI') {
     // load benchmark
     def humanEval = loadBenchmark("humaneval-java-reworded")
 
-    action(name: "createStimulusMatrices") {
+    action(name: 'createStimulusMatrices') {
         execute {
             // create stimulus matrices for given problems
             def myProblems = [humanEval.abstractions['HumanEval_13_greatest_common_divisor']]
@@ -575,7 +575,7 @@ study(name: 'HumanEval-OriginalPrompt-ShowCode') {
     def humanEval = loadBenchmark("humaneval-java-reworded")
     def mbpp = loadBenchmark("mbpp-java-reworded")
 
-    action(name: "createStimulusMatrices") {
+    action(name: 'createStimulusMatrices') {
         execute {
             // create stimulus matrices for given problems
             humanEval.abstractions.values().each { problem ->
@@ -656,6 +656,185 @@ study(name: 'HumanEval-OriginalPrompt-ShowCode') {
             `,
             srmpath: "/web/srm/HUMANEVAL.parquet",
             classifier: "benchmark, replication, humaneval, mbpp, example"
+        },
+        EVOSUITE_LLM: {
+            label: "Diversity-driven Test Generation with EvoSuite and HumanEval-J",
+            description: "Explore how EvoSuite automated unit test generation can be used in LASSO with HumanEval-J (MultiPL-E) to realize diversity-driven test generation",
+            lsl: `dataSource 'lasso_quickstart'
+study(name: 'Evosuite-LLM') {
+
+    // profile for execution
+    profile('java17Profile') {
+        scope('class') { type = 'class' }
+        environment('java17') {
+            image = 'maven:3.9-eclipse-temurin-17'
         }
+    }
+
+    // profile for execution
+    profile('java11Profile') {
+        scope('class') { type = 'class' }
+        environment('java17') {
+            image = 'maven:3.6.3-openjdk-11' // EvoSuite won't run in > JDK 11
+        }
+    }
+
+    // load benchmark
+    def humanEval = loadBenchmark("humaneval-java-reworded")
+
+    action(name: 'createStimulusMatrices') {
+        execute {
+            // create stimulus matrices for given problems
+            def myProblems = [humanEval.abstractions['HumanEval_13_greatest_common_divisor']]
+            myProblems.each { problem ->
+                stimulusMatrix(problem.id, problem.lql, [/*impls*/], problem.tests, problem.dependencies) // id, interface, impls, tests, dependencies
+            }
+        }
+    }
+
+    action(name: 'generateCodeLlama', type: 'GenerateCodeOllama') {
+        // pipeline specific
+        dependsOn 'createStimulusMatrices'
+        include '*'
+        profile('java11Profile') // evosuite 11
+
+        // action configuration block
+        servers = ["http://bagdana.informatik.uni-mannheim.de:11434"]
+        model = "llama3.1:latest"
+        samples = 3 // how many to sample
+        javaVersion = "11" // because of EvoSuite ..
+
+        prompt { stimulusMatrix ->
+            def prompt = [:] // create prompt model
+            prompt.promptContent = """implement a java class with the following interface specification, but do not inherit a java interface: \`\`\`\${stimulusMatrix.lql}\`\`\`. Only output the java class and nothing else."""
+            prompt.id = "lql_prompt"
+            return [prompt] // list of prompts is expected
+        }
+    }
+
+    action(name: 'generateCodeDeepSeek', type: 'GenerateCodeOllama') {
+        // pipeline specific
+        dependsOn 'generateCodeLlama'
+        include '*'
+        profile('java11Profile') // evosuite 11
+
+        // action configuration block
+        servers = ["http://bagdana.informatik.uni-mannheim.de:11434"]
+        model = "deepseek-r1:32b"
+        samples = 3 // how many to sample
+        javaVersion = "11" // because of EvoSuite ..
+
+        prompt { stimulusMatrix ->
+            def prompt = [:] // create prompt model
+            prompt.promptContent = """implement a java class with the following interface specification, but do not inherit a java interface: \`\`\`\${stimulusMatrix.lql}\`\`\`. Only output the java class and nothing else."""
+            prompt.id = "lql_prompt"
+            return [prompt] // list of prompts is expected
+        }
+    }
+
+    // add tests: SBST
+    action(name: 'evoSuite', type: 'EvoSuite') {
+        searchBudget = 30 // we need this as upper bound for timeouts
+        stoppingCondition = "MaxTime"
+        //criterion = "LINE:BRANCH:EXCEPTION:WEAKMUTATION:OUTPUT:METHOD:METHODNOEXCEPTION:CBRANCH"
+
+        dependsOn 'generateCodeDeepSeek'
+        include '*'
+        profile('java11Profile')
+    }
+
+    action(name: 'test', type: 'Arena') { // run all collected stimulus sheets on all impls in arena
+        maxAdaptations = 1 // how many adaptations to try
+        //features = ["cc", "mutation"]
+
+        dependsOn 'evoSuite'
+        include '*'
+        profile('java17Profile')
+    }
+}
+            `,
+            srmpath: "/web/srm/EVOSUITE_humaneval.parquet",
+            classifier: "evosuite, benchmark, humaneval, example"
+        },
+        CODECLONE_NICAD: {
+            label: "Code Clone Detection with Nicad6.2",
+            description: "Explore how Nicad's code clone detection can be used in LASSO to filter SRMs",
+            lsl: `dataSource 'lasso_quickstart'
+study(name: 'CodeClone') {
+
+    // profile for execution
+    profile('java17Profile') {
+        scope('class') { type = 'class' }
+        environment('java17') {
+            image = 'maven:3.9-eclipse-temurin-17'
+        }
+    }
+
+    // load benchmark
+    def humanEval = loadBenchmark("humaneval-java-reworded")
+
+    action(name: 'createStimulusMatrices') {
+        execute {
+            // create stimulus matrices for given problems
+            def myProblems = [humanEval.abstractions['HumanEval_13_greatest_common_divisor']]
+            myProblems.each { problem ->
+                stimulusMatrix(problem.id, problem.lql, [/*impls*/], problem.tests, problem.dependencies) // id, interface, impls, tests, dependencies
+            }
+        }
+    }
+
+    action(name: 'generateCodeLlama', type: 'GenerateCodeOllama') {
+        // pipeline specific
+        dependsOn 'createStimulusMatrices'
+        include '*'
+        profile('java17Profile') // evosuite 11
+
+        // action configuration block
+        servers = ["http://bagdana.informatik.uni-mannheim.de:11434"]
+        model = "llama3.1:latest"
+        samples = 5 // how many to sample
+
+        // custom DSL command offered by the action (for each stimulus matrix, create one prompt to obtain impls)
+        prompt { stimulusMatrix ->
+            // can by for any prompts: FA, impls, models etc.
+            def prompt = [:] // create prompt model
+            prompt.promptContent = """implement a java class with the following interface specification, but do not inherit a java interface: \`\`\`\${stimulusMatrix.lql}\`\`\`. Only output the java class and nothing else."""
+            prompt.id = "lql_prompt"
+            //prompt.model = "llama3.1:latest"
+            return [prompt] // list of prompts is expected
+        }
+    }
+
+    action(name: 'codeClones', type: 'Nicad6') {
+        collapseClones = true // drop clones from stimulus matrix
+
+        dependsOn 'generateCodeLlama'
+        include '*'
+        profile('nicad:6.2')
+    }
+
+    action(name: 'test', type: 'Arena') { // run all collected stimulus sheets on all impls in arena
+        maxAdaptations = 1 // how many adaptations to try
+        //features = ["cc", "mutation"]
+
+        dependsOn 'codeClones'
+        include '*'
+        profile('java17Profile')
+    }
+}
+            `,
+            srmpath: "/web/srm/CODECLONE_NICAD.parquet",
+            classifier: "code clone, nicad, example"
+        }
+        // ,
+        // EVOSUITE_BOUNDEDQUEUE: {
+        //     label: "EvoSuite and Classes",
+        //     description: "Explore how EvoSuite automated unit test generation can be used in LASSO with classes",
+        //     lsl: `dataSource 'lasso_quickstart'
+
+        //     `,
+        //     srmpath: "/web/srm/EVOSUITE_boundedqueue.parquet",
+        //     classifier: "evosuite, example"
+        // }
     }
 };

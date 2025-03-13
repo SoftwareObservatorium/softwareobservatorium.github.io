@@ -143,6 +143,14 @@ study(name: 'BoundedQueue-Mutation') {
             lsl: `dataSource 'lasso_quickstart'
 study(name: 'ChatGPT') {
 
+    // target profile
+    profile('java17Profile') {
+        scope('class') { type = 'class' }
+        environment('java17') {
+            image = 'maven:3.9-eclipse-temurin-17'
+        }
+    }
+
     // load benchmark
     def humanEval = loadBenchmark("humaneval-java-reworded")
 
@@ -160,7 +168,7 @@ study(name: 'ChatGPT') {
         // pipeline specific
         dependsOn 'createStimulusMatrices'
         include '*'
-        profile('java17Profile') // evosuite 11
+        profile('java17Profile')
 
         // action configuration block
         apiKey = "demo" // see https://docs.langchain4j.dev/integrations/language-models/open-ai/

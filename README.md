@@ -1,5 +1,26 @@
 # LASSO project website
 
+## LASSO Website (https://softwareobservatorium.github.io/web/)
+
+```bash
+cd lasso/
+
+# EXPORT your local node distribution
+# e.g.
+export PATH=~/Downloads/node-v22.14.0-linux-x64/bin/:$PATH
+
+# serve
+npm run serve
+
+# build
+npm run build
+
+# deploy
+cd ..
+cp -r lasso/build/ web
+
+# git add, commit, push ...
+```
 
 ## Jupyter Lite
 

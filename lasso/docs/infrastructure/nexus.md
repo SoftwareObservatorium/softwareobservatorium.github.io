@@ -67,15 +67,36 @@ You need to update LASSO's configuration file [corpus.json](https://github.com/S
 
 You need to restart LASSO with the updated `corpus.json` configuration file. It might be necessary to update LASSO's Maven configuration in `lasso-work/repository/settings.xml` as well (alternatively, change or removing LASSO's existing work directory).
 
-Note: For advanced use cases with LASSO, setting up a deployment _user_ is a better choice instead of using the admin user.
+Note: For advanced use cases with LASSO, setting up a deployment _user_ is a better choice instead of using the admin user. Refer to Sonatype's official documentation to learn more.
 
-## Deployment of LASSO's Support Libraries
+## Deployment of LASSO's Support Libraries (Required)
 
-Certain features of LASSO rely on deployed support libraries. To deploy them (see configuration above), run the following command to deploy all LASSO related artifacts to your local Nexus repository
+Certain features of LASSO rely on LASSO-related support libraries that need to be deployed in your Nexus instance. This allows LASSO's facilities to access the required libraries.
+
+### Global Maven Deployment Settings
+
+Before proceeding, modify the password in `doc/nexus_config/settings_plugin_deploy.xml` (i.e., local LASSO repository) to match your custom Nexus password. An example of the modified file is shown below -
+
+```xml
+...
+
+    <servers>
+        <server>
+            <id>lasso_quickstart_nexus</id>
+            <username>admin</username>
+            <password>YOUR_NEXUS_PASSWORD</password>
+        </server>
+    </servers>
+
+...
+```
+
+
+### Deploy LASSO Artifacts
+
+To deploy all LASSO-related artifacts to your local Nexus repository, run the following command in your local LASSO repository -
 
 ```bash
 # set your path to LASSO's repository
 ./mvnw -s doc/nexus_config/settings_plugin_deploy.xml -gs doc/nexus_config/settings_plugin_deploy.xml -DskipTests -Dfrontend.build=embedded -DaltDeploymentRepository=lasso_quickstart_nexus::default::http://localhost:8081/repository/lasso-deploy/ -DaltReleaseDeploymentRepository=lasso_quickstart_nexus::default::http://localhost:8081/repository/lasso-deploy/ -DaltSnapshotDeploymentRepository=lasso_quickstart_nexus::default::http://localhost:8081/repository/lasso-deploy/ deploy
 ```
-
-Note: You need to change the password in `doc/nexus_config/settings_plugin_deploy.xml` to your custom Nexus password (see example).

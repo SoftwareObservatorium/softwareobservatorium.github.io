@@ -9,6 +9,13 @@ The project is managed using Maven by relying on _Maven Wrapper_ (https://maven.
 The following command needs to be executed in the root directory of the repository:
 
 ```bash
+git clone https://github.com/SoftwareObservatorium/lasso.git
+```
+
+```bash
+# your local LASSO directory
+cd lasso/
+
 ./mvnw -DskipTests \
   -Dfrontend.build=embedded \
   clean install

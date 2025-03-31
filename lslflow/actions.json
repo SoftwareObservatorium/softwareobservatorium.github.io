@@ -1,0 +1,709 @@
+{
+  "actions": {
+    "RandomTestGen": {
+      "distributable": false,
+      "disablePartitioning": false,
+      "configuration": {
+        "shuffleSequence": {
+          "description": "shuffle sequence statements",
+          "optional": true,
+          "type": "boolean"
+        },
+        "noOfTests": {
+          "description": "how many tests to generate",
+          "optional": true,
+          "type": "int"
+        },
+        "dependencies": {
+          "description": "dependencies to resolve for types",
+          "optional": true,
+          "type": "java.util.List"
+        }
+      },
+      "description": "Random test value generator for Java types",
+      "state": "stable",
+      "type": "RandomTestGen"
+    },
+    "GenerateTestsOllama": {
+      "distributable": false,
+      "disablePartitioning": false,
+      "configuration": {
+        "servers": {
+          "description": "List of Ollama base urls",
+          "optional": true,
+          "type": "java.util.List"
+        },
+        "promptRequestThreads": {
+          "description": "How many prompt requests in parallel",
+          "optional": false,
+          "type": "int"
+        },
+        "model": {
+          "description": "Ollama model",
+          "optional": true,
+          "type": "java.lang.String"
+        },
+        "samples": {
+          "description": "how many coding solutions to obtain",
+          "optional": true,
+          "type": "int"
+        }
+      },
+      "description": "Generate tests with generative AI based on Ollama",
+      "state": "stable",
+      "type": "GenerateTestsOllama"
+    },
+    "NoOp": {
+      "distributable": false,
+      "disablePartitioning": true,
+      "configuration": {},
+      "description": "An action which does nothing (actually it is used for plain actions in LSL)",
+      "state": "stable",
+      "type": "NoOp"
+    },
+    "GenerateCodeOpenAI": {
+      "distributable": false,
+      "disablePartitioning": false,
+      "configuration": {
+        "repoUrl": {
+          "description": "Maven Repository for Deployment",
+          "optional": true,
+          "type": "java.lang.String"
+        },
+        "repoId": {
+          "description": "Maven Repository Id for Deployment",
+          "optional": true,
+          "type": "java.lang.String"
+        },
+        "regex": {
+          "description": "How to match code snippet",
+          "optional": true,
+          "type": "java.lang.String"
+        },
+        "servers": {
+          "description": "List of Ollama base urls",
+          "optional": true,
+          "type": "java.util.List"
+        },
+        "apiKey": {
+          "description": "OpenAI API key",
+          "optional": true,
+          "type": "java.lang.String"
+        },
+        "javaVersion": {
+          "description": "Set Java version for compilation",
+          "optional": true,
+          "type": "java.lang.String"
+        },
+        "model": {
+          "description": "code model (LLM)",
+          "optional": true,
+          "type": "java.lang.String"
+        },
+        "promptRequestThreads": {
+          "description": "How many prompt requests to do in parallel",
+          "optional": true,
+          "type": "int"
+        },
+        "dataSource": {
+          "description": "Override Data Source",
+          "optional": true,
+          "type": "java.lang.String"
+        },
+        "samples": {
+          "description": "how many coding solutions to obtain",
+          "optional": true,
+          "type": "int"
+        },
+        "deploy": {
+          "description": "deploy package to LASSO Nexus",
+          "optional": true,
+          "type": "boolean"
+        }
+      },
+      "description": "Generate Code with OpenAI",
+      "state": "stable",
+      "type": "GenerateCodeOpenAI"
+    },
+    "Randoop": {
+      "distributable": true,
+      "disablePartitioning": false,
+      "configuration": {
+        "args": {
+          "description": "randoop command line arguments",
+          "optional": true,
+          "type": "java.util.List"
+        },
+        "timeoutMultiplier": {
+          "description": "Grace period before randoop client process is killed. timeoutMultiplier times searchBudget",
+          "optional": true,
+          "type": "int"
+        },
+        "stopAfter": {
+          "description": "stop after X successful classes (applies to entire cluster of worker nodes)",
+          "optional": true,
+          "type": "int"
+        },
+        "cleanExecutables": {
+          "description": "Remove those executables without generated tests",
+          "optional": true,
+          "type": "boolean"
+        },
+        "timeoutClientProcess": {
+          "description": "Hard kill timeout in seconds for evosuite client processes (overrides timeoutMultiplier)",
+          "optional": true,
+          "type": "int"
+        },
+        "searchBudget": {
+          "description": "search budget in seconds",
+          "optional": true,
+          "type": "int"
+        }
+      },
+      "description": "Run Randoop Test Generation",
+      "state": "stable",
+      "type": "Randoop"
+    },
+    "Rank": {
+      "distributable": false,
+      "disablePartitioning": false,
+      "configuration": {
+        "bestMatch": {
+          "description": "Rank by best match",
+          "optional": true,
+          "type": "boolean"
+        },
+        "criteria": {
+          "description": "Ranking Criteria (METRIC_ID:objective:priority)",
+          "optional": true,
+          "type": "java.util.List"
+        },
+        "strategy": {
+          "description": "Ranking strategy (default HDS)",
+          "optional": true,
+          "type": "java.lang.String"
+        }
+      },
+      "description": "Rank Implementations using SOCORA",
+      "state": "stable",
+      "type": "Rank"
+    },
+    "Arena": {
+      "distributable": true,
+      "disablePartitioning": true,
+      "configuration": {
+        "cut": {
+          "description": "Fully-qualified class name of CUT",
+          "optional": false,
+          "type": "java.lang.String"
+        },
+        "adapterStrategy": {
+          "description": "Adapter strategy",
+          "optional": false,
+          "type": "java.lang.String"
+        },
+        "maxAdaptations": {
+          "description": "max. no. adaptations allowed",
+          "optional": true,
+          "type": "int"
+        },
+        "sequences": {
+          "description": "Provide Sequence Sheets",
+          "optional": true,
+          "type": "java.util.Map"
+        },
+        "testClasses": {
+          "description": "Provide JUnit test classes (currently mutually exclusive to 'sequences')",
+          "optional": true,
+          "type": "java.util.Map"
+        },
+        "benchmark": {
+          "description": "Use Sequences provided by benchmark with given id",
+          "optional": true,
+          "type": "java.lang.String"
+        },
+        "containerTimeout": {
+          "description": "Arena Container timeout in millis",
+          "optional": true,
+          "type": "long"
+        },
+        "features": {
+          "description": "Enable features",
+          "optional": true,
+          "type": "java.util.List"
+        },
+        "sheets": {
+          "description": "Sheets (deprecated, use 'sequences' instead)",
+          "optional": true,
+          "type": "java.util.Map"
+        },
+        "ignoreVisibility": {
+          "description": "Ignore visibility (access to constructors/methods)",
+          "optional": true,
+          "type": "boolean"
+        },
+        "task": {
+          "description": "Task to execute in arena (default 'SSNExecute')",
+          "optional": false,
+          "type": "java.lang.String"
+        },
+        "generateJUnitTests": {
+          "description": "generate JUnit tests?",
+          "optional": true,
+          "type": "boolean"
+        },
+        "populateTestsFromAction": {
+          "description": "Mine tests from given action (abstraction name is assumed to be the same, adds all tests to all systems)",
+          "optional": true,
+          "type": "java.lang.String"
+        },
+        "noTestsFromBenchmark": {
+          "description": "Use Sequences provided by benchmark",
+          "optional": true,
+          "type": "boolean"
+        },
+        "writeSequenceRecords": {
+          "description": "Write sequence records to SRM",
+          "optional": true,
+          "type": "boolean"
+        },
+        "referenceImplementationOnly": {
+          "description": "Process reference implementation only",
+          "optional": true,
+          "type": "boolean"
+        },
+        "sequenceActions": {
+          "description": "Obtain stored Sequences from the following actions",
+          "optional": true,
+          "type": "java.util.List"
+        },
+        "adaptBySequenceSpecification": {
+          "description": "adapt by sequence specification (true) or by all (false)",
+          "optional": true,
+          "type": "boolean"
+        },
+        "exportCsv": {
+          "description": "export SRM as CSV?",
+          "optional": true,
+          "type": "boolean"
+        }
+      },
+      "description": "ArenaSSN action (does not support partitioning",
+      "state": "stable",
+      "type": "Arena"
+    },
+    "GenerateTestsOpenAI": {
+      "distributable": false,
+      "disablePartitioning": false,
+      "configuration": {
+        "servers": {
+          "description": "List of Ollama base urls",
+          "optional": true,
+          "type": "java.util.List"
+        },
+        "apiKey": {
+          "description": "OpenAI API key",
+          "optional": true,
+          "type": "java.lang.String"
+        },
+        "promptRequestThreads": {
+          "description": "How many prompt requests in parallel",
+          "optional": false,
+          "type": "int"
+        },
+        "model": {
+          "description": "Ollama model",
+          "optional": true,
+          "type": "java.lang.String"
+        },
+        "samples": {
+          "description": "how many coding solutions to obtain",
+          "optional": true,
+          "type": "int"
+        }
+      },
+      "description": "Generate Tests with OpenAI",
+      "state": "stable",
+      "type": "GenerateTestsOpenAI"
+    },
+    "GenerateCodeOllama": {
+      "distributable": false,
+      "disablePartitioning": false,
+      "configuration": {
+        "repoUrl": {
+          "description": "Maven Repository for Deployment",
+          "optional": true,
+          "type": "java.lang.String"
+        },
+        "repoId": {
+          "description": "Maven Repository Id for Deployment",
+          "optional": true,
+          "type": "java.lang.String"
+        },
+        "regex": {
+          "description": "How to match code snippet",
+          "optional": true,
+          "type": "java.lang.String"
+        },
+        "servers": {
+          "description": "List of Ollama base urls",
+          "optional": true,
+          "type": "java.util.List"
+        },
+        "javaVersion": {
+          "description": "Set Java version for compilation",
+          "optional": true,
+          "type": "java.lang.String"
+        },
+        "model": {
+          "description": "code model (LLM)",
+          "optional": true,
+          "type": "java.lang.String"
+        },
+        "promptRequestThreads": {
+          "description": "How many prompt requests to do in parallel",
+          "optional": true,
+          "type": "int"
+        },
+        "dataSource": {
+          "description": "Override Data Source",
+          "optional": true,
+          "type": "java.lang.String"
+        },
+        "samples": {
+          "description": "how many coding solutions to obtain",
+          "optional": true,
+          "type": "int"
+        },
+        "deploy": {
+          "description": "deploy package to LASSO Nexus",
+          "optional": true,
+          "type": "boolean"
+        }
+      },
+      "description": "Generate Code with Ollama",
+      "state": "stable",
+      "type": "GenerateCodeOllama"
+    },
+    "TestSuiteMinimization": {
+      "distributable": false,
+      "disablePartitioning": false,
+      "configuration": {},
+      "description": "Minimize test suites based on coverage data",
+      "state": "stable",
+      "type": "TestSuiteMinimization"
+    },
+    "Search": {
+      "distributable": false,
+      "disablePartitioning": false,
+      "configuration": {
+        "dataSource": {
+          "description": "Data Source",
+          "optional": true,
+          "type": "java.lang.String"
+        }
+      },
+      "description": "Search Implementations (Query/Find/Filter) from Data Sources",
+      "state": "stable",
+      "type": "Search"
+    },
+    "EvoSuite": {
+      "distributable": true,
+      "disablePartitioning": false,
+      "configuration": {
+        "timeBudgetProviderByAbstraction": {
+          "description": "Implementation specific time budget in seconds (by abstraction)",
+          "optional": true,
+          "type": "java.util.Map"
+        },
+        "ignoreMissingReport": {
+          "description": "Ignore missing reports",
+          "optional": true,
+          "type": "boolean"
+        },
+        "criteria": {
+          "description": "Evosuite criteria",
+          "optional": true,
+          "type": "java.lang.String"
+        },
+        "stopAfter": {
+          "description": "stop after X successful classes (applies to entire cluster of worker nodes)",
+          "optional": true,
+          "type": "int"
+        },
+        "stoppingCondition": {
+          "description": "Evosuite stopping criterion",
+          "optional": true,
+          "type": "java.lang.String"
+        },
+        "cleanExecutables": {
+          "description": "Remove those executables without generated tests",
+          "optional": true,
+          "type": "boolean"
+        },
+        "methodOnly": {
+          "description": "Generate tests for given method signature (if method and NOT class signature)",
+          "optional": true,
+          "type": "boolean"
+        },
+        "repetitionsProvider": {
+          "description": "Implementation specific number of repetitions",
+          "optional": true,
+          "type": "java.util.Map"
+        },
+        "timeBudgetProviderByImpl": {
+          "description": "Implementation specific time budget in seconds (by implementation)",
+          "optional": true,
+          "type": "java.util.Map"
+        },
+        "amplify": {
+          "description": "Amplification mode",
+          "optional": true,
+          "type": "boolean"
+        },
+        "version": {
+          "description": "EvoSuite version",
+          "optional": true,
+          "type": "java.lang.String"
+        },
+        "repetitions": {
+          "description": "Repeat execution of EvoSuite N times",
+          "optional": true,
+          "type": "int"
+        },
+        "repetitionsProviderDefault": {
+          "description": "repetitionsProvider fallback if implementation is missing",
+          "optional": true,
+          "type": "int"
+        },
+        "amplificationStrategy": {
+          "description": "Amplification strategy",
+          "optional": true,
+          "type": "java.lang.String"
+        },
+        "timeoutMultiplier": {
+          "description": "Grace period before evosuite client process is killed. timeoutMultiplier times searchBudget",
+          "optional": true,
+          "type": "int"
+        },
+        "outputVariables": {
+          "description": "Evosuite report output columns",
+          "optional": true,
+          "type": "java.lang.String"
+        },
+        "timeoutClientProcess": {
+          "description": "Hard kill timeout in seconds for evosuite client processes (overrides timeoutMultiplier)",
+          "optional": true,
+          "type": "int"
+        },
+        "assertions": {
+          "description": "Generate assertions",
+          "optional": true,
+          "type": "boolean"
+        },
+        "searchBudget": {
+          "description": "Evosuite search budget in seconds",
+          "optional": true,
+          "type": "int"
+        },
+        "timeBudgetProviderDefault": {
+          "description": "timeBudgetProvider fallback if implementation is missing",
+          "optional": true,
+          "type": "int"
+        }
+      },
+      "description": "Run Evosuite Test Generation",
+      "state": "stable",
+      "type": "EvoSuite"
+    },
+    "GitImport": {
+      "distributable": false,
+      "disablePartitioning": false,
+      "configuration": {
+        "repoUrl": {
+          "description": "Maven Repository for Deployment",
+          "optional": true,
+          "type": "java.lang.String"
+        },
+        "repoId": {
+          "description": "Maven Repository Id for Deployment",
+          "optional": true,
+          "type": "java.lang.String"
+        },
+        "repositories": {
+          "description": "Repositories",
+          "optional": false,
+          "type": "java.util.Map"
+        },
+        "deploy": {
+          "description": "deploy package to LASSO Nexus",
+          "optional": true,
+          "type": "boolean"
+        }
+      },
+      "description": "Import Git repositories, build and index them",
+      "state": "stable",
+      "type": "GitImport"
+    },
+    "ArenaPartitioning": {
+      "distributable": true,
+      "disablePartitioning": false,
+      "configuration": {
+        "cut": {
+          "description": "Fully-qualified class name of CUT",
+          "optional": false,
+          "type": "java.lang.String"
+        },
+        "adapterStrategy": {
+          "description": "Adapter strategy",
+          "optional": false,
+          "type": "java.lang.String"
+        },
+        "maxAdaptations": {
+          "description": "max. no. adaptations allowed",
+          "optional": true,
+          "type": "int"
+        },
+        "sequences": {
+          "description": "Provide Sequence Sheets",
+          "optional": true,
+          "type": "java.util.Map"
+        },
+        "testClasses": {
+          "description": "Provide JUnit test classes (currently mutually exclusive to 'sequences')",
+          "optional": true,
+          "type": "java.util.Map"
+        },
+        "benchmark": {
+          "description": "Use Sequences provided by benchmark with given id",
+          "optional": true,
+          "type": "java.lang.String"
+        },
+        "containerTimeout": {
+          "description": "Arena Container timeout in millis",
+          "optional": true,
+          "type": "long"
+        },
+        "features": {
+          "description": "Enable features",
+          "optional": true,
+          "type": "java.util.List"
+        },
+        "sheets": {
+          "description": "Sheets (deprecated, use 'sequences' instead)",
+          "optional": true,
+          "type": "java.util.Map"
+        },
+        "ignoreVisibility": {
+          "description": "Ignore visibility (access to constructors/methods)",
+          "optional": true,
+          "type": "boolean"
+        },
+        "task": {
+          "description": "Task to execute in arena (default 'SSNExecute')",
+          "optional": false,
+          "type": "java.lang.String"
+        },
+        "generateJUnitTests": {
+          "description": "generate JUnit tests?",
+          "optional": true,
+          "type": "boolean"
+        },
+        "populateTestsFromAction": {
+          "description": "Mine tests from given action (abstraction name is assumed to be the same, adds all tests to all systems)",
+          "optional": true,
+          "type": "java.lang.String"
+        },
+        "noTestsFromBenchmark": {
+          "description": "Use Sequences provided by benchmark",
+          "optional": true,
+          "type": "boolean"
+        },
+        "writeSequenceRecords": {
+          "description": "Write sequence records to SRM",
+          "optional": true,
+          "type": "boolean"
+        },
+        "referenceImplementationOnly": {
+          "description": "Process reference implementation only",
+          "optional": true,
+          "type": "boolean"
+        },
+        "sequenceActions": {
+          "description": "Obtain stored Sequences from the following actions",
+          "optional": true,
+          "type": "java.util.List"
+        },
+        "adaptBySequenceSpecification": {
+          "description": "adapt by sequence specification (true) or by all (false)",
+          "optional": true,
+          "type": "boolean"
+        },
+        "exportCsv": {
+          "description": "export SRM as CSV?",
+          "optional": true,
+          "type": "boolean"
+        }
+      },
+      "description": "ArenaSSN action",
+      "state": "stable",
+      "type": "ArenaPartitioning"
+    },
+    "Nicad6": {
+      "distributable": false,
+      "disablePartitioning": false,
+      "configuration": {
+        "cloneType": {
+          "description": "Clone Type",
+          "optional": true,
+          "type": "java.lang.String"
+        },
+        "refActionRef": {
+          "description": "Include reference implementation from the following action",
+          "optional": true,
+          "type": "java.lang.String"
+        },
+        "normalizeVisibility": {
+          "description": "Normalize Visibility Modifiers",
+          "optional": true,
+          "type": "boolean"
+        },
+        "collapseClones": {
+          "description": "Collapse detected Clones",
+          "optional": true,
+          "type": "boolean"
+        }
+      },
+      "description": "Nicad 6 Code Clone Detection",
+      "state": "stable",
+      "type": "Nicad6"
+    },
+    "TypeAwareMutatorTestGen": {
+      "distributable": false,
+      "disablePartitioning": false,
+      "configuration": {
+        "noOfTests": {
+          "description": "how many tests to generate",
+          "optional": true,
+          "type": "int"
+        },
+        "dependencies": {
+          "description": "dependencies to resolve for types",
+          "optional": true,
+          "type": "java.util.List"
+        }
+      },
+      "description": "Type-aware mutator for test generation",
+      "state": "stable",
+      "type": "TypeAwareMutatorTestGen"
+    },
+    "Debug": {
+      "distributable": true,
+      "disablePartitioning": false,
+      "configuration": {},
+      "description": "A LASSO action which prints some debug information",
+      "state": "stable",
+      "type": "Debug"
+    }
+  }
+}

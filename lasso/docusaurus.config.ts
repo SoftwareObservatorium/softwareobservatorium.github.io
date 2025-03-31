@@ -71,7 +71,7 @@ const config: Config = {
           label: 'Documentation',
         },
         {to: '/hub', label: 'TDSEHub (Pipelines)', position: 'left'},
-        {to: '/playground', label: 'Playground (Labs)', position: 'left'},
+        {to: '/labs', label: 'Labs (Playground)', position: 'left'},
         {to: '/blog', label: 'Blog', position: 'left'},
         {to: '/research/intro', label: 'Research', position: 'left'},
         {
@@ -96,8 +96,8 @@ const config: Config = {
               to: '/docs/intro',
             },
             {
-              label: 'Playground (Labs)',
-              to: '/playground',
+              label: 'Labs (Playground)',
+              to: '/labs',
             },
             {
               label: 'Research',

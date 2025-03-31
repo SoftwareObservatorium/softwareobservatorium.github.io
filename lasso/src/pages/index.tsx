@@ -65,7 +65,7 @@ function HomepageHeader() {
         <div className="container">
                 <div className="row">
                   <ul>
-                        {recentPosts.items.slice(0, 5).map((item, index) => (
+                        {recentPosts.items.slice(0, 2).map((item, index) => (
                           <li key={index}>
                             <a href={`${item.permalink}`}>{item.title}</a>{" "}
                           </li>

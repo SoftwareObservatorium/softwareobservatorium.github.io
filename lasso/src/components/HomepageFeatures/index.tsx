@@ -1,6 +1,7 @@
 import clsx from 'clsx';
 import Heading from '@theme/Heading';
 import styles from './styles.module.css';
+import CodeBlock from '@theme/CodeBlock';
 
 type FeatureItem = {
   title: string;
@@ -11,6 +12,26 @@ type FeatureItem = {
 };
 
 const FeatureList: FeatureItem[] = [
+//   {
+//     title: 'Try LASSO now!',
+//     //Svg: require('@site/static/img/undraw_services_re_hu5n.svg').default,
+//     image: 'img/features/services.png',
+//     description: (
+//       <>
+//         <div >
+//           <p>Run the following two commands in a local directoy on your local machine (requires <a href="https://docs.docker.com/compose/">docker compose</a>):</p>
+//         <CodeBlock
+//         language="bash">
+//         {`curl https://raw.githubusercontent.com/SoftwareObservatorium/lasso/refs/heads/develop/docker/compose/docker-compose-embedded.yml -o docker-compose.yml
+// docker compose up
+//         `}
+//       </CodeBlock>
+//       <p>Then open LASSO's dashboard <a href="http://localhost:10222/webui/">http://localhost:10222/webui/</a> (login: admin / admin123)</p>
+//         </div>
+//       </>
+//     ),
+//     position: false,
+//   },
   {
     title: 'Test-Driven Software Experimentation with LSL',
     //Svg: require('@site/static/img/undraw_services_re_hu5n.svg').default,
@@ -70,8 +91,9 @@ function Feature({title, image, description, position}: FeatureItem) {
     <div className={clsx('col col--6')}>
       <div className="text--center">
         <Heading as="h3">{title}</Heading>
-        <p>{description}</p>
+
       </div>
+      {description}
     </div>
   );
 

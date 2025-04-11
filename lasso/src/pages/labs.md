@@ -17,6 +17,6 @@ The project is actively developed by **David Cebulla**, a business informatics s
 
 Visit the Project Website: Explore the preview version of LSLFlow here: [LSLFlow](https://softwareobservatorium.github.io/lslflow/)
 
-## LASSO Platform
+## LASSO Platform (Demo Instance)
 
-A public LASSO instance (i.e., playground) will be available soon ...
+A public demo LASSO instance (i.e., playground) is available. To try LASSO, head over to [TDSEHub](./hub), select an example LSL pipeline script and press the `Try Now!` button.

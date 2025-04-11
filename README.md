@@ -9,6 +9,12 @@ cd lasso/
 # e.g.
 export PATH=~/Downloads/node-v22.14.0-linux-x64/bin/:$PATH
 
+# install
+
+npm install --force
+
+Note: `--force` because there are some third-party libraries with react version conflicts
+
 # serve
 npm run serve
 

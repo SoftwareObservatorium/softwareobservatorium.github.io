@@ -12,6 +12,7 @@ import Tab from '@mui/material/Tab';
 import Grid from '@mui/material/Grid2';
 import SrmViewer from '../components/SrmViewer';
 import GraphComponent from '../components/Graph/graph';
+import { useHistory } from '@docusaurus/router';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -43,6 +44,8 @@ function a11yProps(index: number) {
 }
 
 const HubPage = () => {
+  const history = useHistory()
+
   const [value, setValue] = React.useState(0);
 
   const handleChange = (event: React.SyntheticEvent, newValue: number) => {
@@ -80,6 +83,11 @@ const HubPage = () => {
     }
 
     window.scrollTo({ top: 0, left: 0 })
+  };
+
+  const handleTryClick = () => {
+      // redirect to result page
+      history.push(`./lasso/submit?exampleId=${currentExampleId}`)
   };
 
   const editorRef = useRef<any>(null);
@@ -143,7 +151,7 @@ const HubPage = () => {
                   <Typography sx={{ margin: 2 }} variant="h5" component="div">LSL Pipeline Viewer<Typography variant="h6" component="div">Explore the study and actions</Typography></Typography>
                   <Typography sx={{ color: 'text.secondary', mb: 1.5 }}>{HubExamples.MAP[currentExampleId].description}</Typography>
                   <Typography variant="h5" component="div">
-                    <Button sx={{ float: "right" }} disabled>Try (coming soon)</Button>
+                    <Button sx={{ float: "right" }} onClick={(event) => handleTryClick()}>Try Now!</Button>
                     <Editor
                       height="500px"
                       defaultLanguage="java"

@@ -4,6 +4,26 @@ sidebar_position: 2
 
 # Quickstart: Submit Your First LSL Script
 
+## Start the LASSO Platform and its Executable Corpus
+
+To get started, run the following two commands in a local directory on your machine (requires [docker compose](https://docs.docker.com/compose/)):
+
+```bash
+curl https://raw.githubusercontent.com/SoftwareObservatorium/lasso/refs/heads/develop/docker/compose/docker-compose-embedded.yml -o docker-compose.yml
+docker compose up
+```
+
+Wait until all services started (LASSO platform, Code Search Index and Artifact Repository) and then open LASSO's dashboard at http://localhost:10222/webui/ (login: admin / admin123).
+
+Note that the corresponding Docker Dockerfiles and compose files can be found in [GitHub](https://github.com/SoftwareObservatorium/lasso/tree/develop/docker). Brief instructions of how the images were built are available [here](https://github.com/SoftwareObservatorium/lasso/blob/develop/DEPLOY_GITLAB_DOCKER.md).
+
+### Infrastructure and Services
+
+Besides the LASSO Platform, the executable corpus services required by the platform are started as well:
+
+* a code search index based on `Apache Solr`, preconfigured for LASSO's code search and analysis services, is started: [Solr Dashboard](http://localhost:8983) (no credentials!)
+* an artifact repository based on `Sonatype's Nexus` (Community edition), preconfigured for LASSO's artifact storage, is started: [Nexus Dashboard](http://localhost:8081/) (login: admin / admin)
+
 ## Submitting a Pipeline using LASSO's Dashboard (Angular Web Application)
 
 The LASSO platform provides a comprehensive dashboard to manage, monitor, and view results of pipeline scripts and their execution. Additionally, it provides additional services such as code search.
@@ -12,7 +32,7 @@ LASSO' dashboard is accessible at (http://localhost:10222/webui/).
 
 ### Step-by-Step Guide to Submit a New Script
 
-1. **Login**: Select the desired user(s) from the [users.json](https://github.com/SoftwareObservatorium/lasso/tree/develop/doc/lasso_config) file.
+1. **Login**: Select the desired user(s) from the [users.json](https://github.com/SoftwareObservatorium/lasso/tree/develop/doc/lasso_config) file (default: admin / admin123).
 2. **Submit a New LSL Script Pipeline**: see the famous `Hello World` LSL pipeline next.
 
 ### Hello World LSL Pipeline Script
@@ -81,6 +101,10 @@ After execution, the dashboard offers various ways to obtain results:
 
 *   **Results**: View the results in a classic search results view.
 *   **Data Analysis**: Analyze data stored in LASSO's database in various ways.
+
+## Software Analytics (SRM/SRH Analysis)
+
+The LSL pipeline script executions result in one or more SRMs that are stored in LASSO's distributed database (based on Apache Ignite). The collection of SRMs effectively results in an SRM data warehouse, which we refer to as stimulus response hypercube (SRH). The data can be export to external analytics tools. You can find more information in [Analysis](../analytics/data.md).
 
 ## Next
 

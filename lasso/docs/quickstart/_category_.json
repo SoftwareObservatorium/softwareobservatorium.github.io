@@ -1,8 +1,8 @@
 {
-  "label": "Quickstart",
-  "position": 2,
+  "label": "5 Minute Tutorial",
+  "position": 1,
   "link": {
     "type": "generated-index",
-    "description": "5 minutes to learn the most important LASSO concepts"
+    "description": "5 minutes to start LASSO and submit your first LSL script"
   }
 }

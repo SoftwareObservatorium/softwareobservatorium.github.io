@@ -118,6 +118,7 @@ export default function HomepageFeatures(): JSX.Element {
   return (
     <section className={styles.features}>
       <div className="container">
+      <div className="text--center"><h2>Key Features of LASSO</h2></div>
           {FeatureList.map((props, idx) => (
             <div className="row margin--lg padding--lg shadow--md">
               <Feature key={idx} {...props} />

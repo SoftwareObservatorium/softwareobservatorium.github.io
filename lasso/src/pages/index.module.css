@@ -36,3 +36,7 @@
   width: 300px;
   align-items: center;
 }
+
+.quickstart {
+  background-color: var(--ifm-color-primary-lightest);
+}

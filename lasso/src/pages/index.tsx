@@ -45,8 +45,8 @@ function HomepageHeader() {
                 </Link>
                 <Link
                   className="button button--secondary button--lg"
-                  to="/docs/intro">
-                  Documentation 📖
+                  to="/docs/quickstart/scenario">
+                  5 Minute Tutorial 📖
                 </Link>
                 <Link
                   className="button button--secondary button--lg"
@@ -57,7 +57,7 @@ function HomepageHeader() {
             </div>
           </div>
           <div className="col col--4">
-            <div className="container padding--lg">
+            <div className="container padding--sm">
               <Card shadow='tl' >
                 <CardHeader style={{ backgroundColor: '#ffffff', color: 'black' }} className='text--center'>
                   <h3>Recent Blog Posts</h3>
@@ -129,30 +129,31 @@ export default function Home(): JSX.Element {
 
             </div>
           </div>
-          
+
         </section>
 
         <section>
-          <div className="row margin--lg padding--lg shadow--md">
-          <div className="container">
-            <div className="row">
-              <div className={clsx('col col--12')}>
-                <div className="text--center">
-                  <Heading as="h3">Try LASSO Now!</Heading>
-                </div>
-                <div>
-                  <p>To get started, run the following two commands in a local directory on your machine (requires <a href="https://docs.docker.com/compose/">docker compose</a>):</p>
-                  <CodeBlock
-                    language="bash">
-                    {`curl https://raw.githubusercontent.com/SoftwareObservatorium/lasso/refs/heads/develop/docker/compose/docker-compose-embedded.yml -o docker-compose.yml
+          <br/>
+          <div className="container padding--sm">
+            <div className="text--center">
+              <Heading as="h2">Try LASSO in 5 Minutes</Heading>
+            </div>
+            <div className="row margin--lg padding--lg shadow--md">
+              <div className="row">
+                <div className={clsx('col col--10')}>
+                  <div>
+                    <p>To get started, run the following two commands in a local directory on your machine (requires <a href="https://docs.docker.com/compose/">docker compose</a>):</p>
+                    <CodeBlock
+                      language="bash">
+                      {`curl https://raw.githubusercontent.com/SoftwareObservatorium/lasso/refs/heads/develop/docker/compose/docker-compose-embedded.yml -o docker-compose.yml
 docker compose up
                     `}
-                  </CodeBlock>
-                  <p>Wait until all services started (LASSO platform, Code Search Index and Artifact Repository) and then open LASSO's dashboard at <a href="http://localhost:10222/webui/">http://localhost:10222/webui/</a> (login: admin / admin123)</p>
+                    </CodeBlock>
+                    <p>Wait until all services started (LASSO platform, Code Search Index and Artifact Repository) and then open LASSO's dashboard at <a href="http://localhost:10222/webui/">http://localhost:10222/webui/</a> (login: admin / admin123). See <a href="./docs/quickstart/scenario">5 Minute Tutorial</a> for more details.</p>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
           </div>
 
         </section>

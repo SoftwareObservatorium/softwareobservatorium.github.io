@@ -4,7 +4,9 @@ sidebar_position: 1
 
 # Documentation
 
-Discover the **LASSO Platform**.
+## 5 Minute Tutorial
+
+Start with our [5 minute tutorial to start the **LASSO Platform** and to submit your first LSL script](./quickstart/scenario.md).
 
 ## Data Structures and Languages
 

@@ -1,8 +1,9 @@
 import axios from "axios";
 import authHeader from "./authheader";
-import { LslRequest } from "./models";
+import { LslRequest, SearchSrmQueryRequest } from "./models";
 
 const API_URL = "https://odisse.informatik.uni-mannheim.de/";
+//const API_URL = "http://localhost:10222/";
 
 const getProfile = () => {
   return axios.get(API_URL + "auth/me", { headers: authHeader() });
@@ -14,6 +15,11 @@ const execute = (request: LslRequest) => {
 
 const getScriptJobStatus = (executionId: string) => {
   return axios.get(`${API_URL}api/v1/lasso/scripts/${executionId}/status`, { headers: authHeader() });
+};
+
+const queryScript = (request: SearchSrmQueryRequest) => {
+  const executionId = request.executionId
+  return axios.post(`${API_URL}api/v1/lasso/scripts/${executionId}/query`, request, { headers: authHeader() });
 };
 
 const retrieveParquet = (executionId: string) => {
@@ -28,8 +34,10 @@ const LassoService = {
     getProfile,
     execute,
     getScriptJobStatus,
+    queryScript,
     retrieveParquet,
-    retrieveParquetUrl
+    retrieveParquetUrl,
+    API_URL
 };
 
 export default LassoService;

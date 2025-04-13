@@ -1,4 +1,4 @@
-import { Box, Button, CardActions, CardContent, CircularProgress, Link, Tab, Tabs, Typography } from '@mui/material';
+import { Accordion, AccordionSummary, AccordionDetails, Box, Button, CardActions, CardContent, CircularProgress, Link, Tab, Tabs, Typography, List, ListItem, ListItemIcon, ListItemText, Divider, FormControl, InputLabel, Select, MenuItem, SelectChangeEvent } from '@mui/material';
 import Grid from '@mui/material/Grid2';
 import React, { useEffect, useRef, useState } from 'react';
 
@@ -8,11 +8,16 @@ import Head from '@docusaurus/Head';
 
 import { useHistory, useLocation } from '@docusaurus/router';
 import LassoService from '@site/src/services/LassoService';
-import { ScriptInfo } from '@site/src/services/models';
+import { ScriptInfo, SearchSrmQueryRequest, SearchSrmQueryResponse } from '@site/src/services/models';
 import SrmViewer from '@site/src/components/SrmViewer';
 
 import CodeBlock from '@theme/CodeBlock';
 import BrowserOnly from '@docusaurus/BrowserOnly';
+
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import Code from '@mui/icons-material/Code';
+import ActuationSheet from '@site/src/components/Sheet/ActuationSheet';
+import SheetService from '@site/src/components/Sheet/SheetService';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -50,10 +55,19 @@ const ResultPage = () => {
   const [scriptInfo, setScriptInfo] = useState<ScriptInfo>()
   const intervalRef = useRef(null);
 
+  const [queryResponse, setQueryResponse] = useState<SearchSrmQueryResponse>()
+
   const [value, setValue] = React.useState(0);
+  const [currentAction, setCurrentAction] = React.useState<string>();
 
   const handleChange = (event: React.SyntheticEvent, newValue: number) => {
     setValue(newValue);
+  };
+
+  const handleActionChange = (event: SelectChangeEvent) => {
+    setCurrentAction(event.target.value);
+    // update
+    queryScript(event.target.value);
   };
 
   console.log("loading " + executionId)
@@ -67,6 +81,10 @@ const ResultPage = () => {
 
           //
           setScriptInfo(scriptInfo)
+
+          if (scriptInfo.status === "SUCCESSFUL") {
+            queryScript("")
+          }
 
           return scriptInfo;
         },
@@ -86,12 +104,44 @@ const ResultPage = () => {
       )
   };
 
+  const queryScript = (forAction: string) => {
+    const request = new SearchSrmQueryRequest()
+    request.executionId = executionId
+    request.forAction = forAction
+
+    return LassoService.queryScript(request)
+      .then(
+        (response) => {
+          let queryResponse: SearchSrmQueryResponse = response.data
+          console.log("queryScript successful " + JSON.stringify(queryResponse))
+
+          //
+          setQueryResponse(queryResponse)
+
+          return queryResponse;
+        },
+        (error) => {
+          const resMessage =
+            (error.response &&
+              error.response.data &&
+              error.response.data.message) ||
+            error.message ||
+            error.toString();
+
+          // FIXME
+          console.log("queryScript attempt failed " + error)
+
+          return null;
+        }
+      )
+  };
+
   useEffect(() => {
     intervalRef.current = setInterval(() => {
       checkScriptJobStatus();
       console.log(JSON.stringify(scriptInfo));
 
-    }, 1000);
+    }, 2500);
 
     /**
  *     UNKNOWN,
@@ -112,7 +162,7 @@ DRAFT
 
     }
 
-    return () => clearInterval(intervalRef.current)
+    return () => clearInterval(intervalRef.current);
   })
 
   return (
@@ -135,9 +185,23 @@ DRAFT
             <Box sx={{ width: '100%' }}>
               <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
                 <Tabs value={value} onChange={handleChange} aria-label="basic tabs example">
-                  <Tab label="Script Overview" {...a11yProps(0)} />
+                  <Tab label="Overview" {...a11yProps(0)} />
+                  {/* {scriptInfo.status === "SUCCESSFUL" ?
+                    <>
+                      <Tab label="SRM Explorer" {...a11yProps(1)} />
+                      <Tab label="JupyterLab" {...a11yProps(2)} />
+                      <Tab label="Export Parquet" {...a11yProps(3)} />
+                    </>
+                    : null} */}
                   {scriptInfo.status === "SUCCESSFUL" ?
-                    <Tab label="SRM Explorer" {...a11yProps(1)} /> : null}
+                    <Tab label="SRM Explorer" {...a11yProps(1)} />
+                    : null}
+                  {scriptInfo.status === "SUCCESSFUL" ?
+                    <Tab label="JupyterLab" {...a11yProps(2)} />
+                    : null}
+                  {scriptInfo.status === "SUCCESSFUL" ?
+                    <Tab label="Export" {...a11yProps(3)} />
+                    : null}
                 </Tabs>
               </Box>
               <CustomTabPanel value={value} index={0}>
@@ -147,20 +211,154 @@ DRAFT
                     <CircularProgress size="3rem" /> : null}
                 </Typography>
                 {scriptInfo.status === "SUCCESSFUL" ?
-                  <p>You can now explore the SRMs in the 'SRM Explorer' tab above.</p> : null}
-                {/* <Typography variant="h5" component="div">
-                  <CodeBlock
-                    language="groovy">{scriptInfo.content}</CodeBlock>
-                </Typography> */}
+                  <p>Note: You can now explore the SRMs in the 'SRM Explorer' tab above.</p> : null}
+
+                {queryResponse ?
+                  <>
+
+                    <Typography>
+                      A total of '{queryResponse.actions.length}' actions were executed. You can select the LSL action is you are interested in.
+                    </Typography>
+
+                    <FormControl fullWidth>
+                      <InputLabel id="demo-simple-select-label">LSL Action</InputLabel>
+                      <Select
+                        labelId="demo-simple-select-label"
+                        id="demo-simple-select"
+                        value={currentAction}
+                        label="LSL Action"
+                        onChange={handleActionChange}
+                      >
+                        {queryResponse.actions.map((action, idx) => (
+                          <MenuItem value={action}>{action}</MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
+                    <br />
+                    <Typography>
+                      The following functional abstractions and their corresponding stimulus matrices were defined.
+                    </Typography>
+
+                    <br />
+
+                    {queryResponse.abstractions.map((ab) => (
+
+                      <Accordion>
+                        <AccordionSummary
+                          expandIcon={<ExpandMoreIcon />}
+                          aria-controls="panel2-content"
+                          id="panel2-header"
+                        >
+                          <Typography variant="h6" component="div">Abstraction '{ab.name}' (Action '{ab.action}')</Typography>
+                          {/* <CodeBlock language="java">{ab.specification.lql}</CodeBlock> */}
+                        </AccordionSummary>
+                        <AccordionDetails>
+
+                          <Typography>
+                            Interface Specification (LQL)
+                          </Typography>
+                          <CodeBlock
+                            language="groovy">{ab.specification?.interfaceSpecification?.lqlQuery}</CodeBlock>
+
+                          <Typography>
+                            {ab.codeUnits.length} Code Module(s)
+                          </Typography>
+
+                          <List dense={true}>
+
+                            {ab.codeUnits.map((codeUnit) => (
+                              <ListItem key={codeUnit.id}>
+                                <ListItemIcon>
+                                  <Code />
+                                </ListItemIcon>
+                                <ListItemText
+                                  primary={codeUnit.packagename + "." + codeUnit.name}
+                                  secondary={
+                                    <React.Fragment>
+                                      <Typography
+                                        component="span"
+                                        variant="body2"
+                                        sx={{ color: 'text.primary', display: 'inline' }}
+                                      >
+                                        <small>{codeUnit.id}</small>
+                                      </Typography>
+                                      <CodeBlock language="java">{codeUnit.content ? codeUnit.content : "n/a"}</CodeBlock>
+                                    </React.Fragment>
+                                  }
+                                ></ListItemText>
+
+                              </ListItem>
+                            ))}
+                          </List>
+
+                          <Typography>
+                            {ab.specification.tests.length} Test(s)
+                          </Typography>
+
+                          <List dense={true}>
+
+                            {ab.specification.tests.map((test, idx) => (
+                              <ListItem key={idx}>
+                                <ListItemIcon>
+                                  <Code />
+                                </ListItemIcon>
+                                <ListItemText
+                                  primary={test.signature}
+                                  secondary={
+                                    <React.Fragment>
+                                      <Typography
+                                        component="span"
+                                        variant="body2"
+                                        sx={{ color: 'text.primary', display: 'inline' }}
+                                      >
+                                        <small>{test.ssn ? "SSN" : "Code"}</small>
+                                      </Typography>
+                                      {test.ssn ?
+                                        <ActuationSheet sheetSignature={test.signature} sheetData={SheetService.parseActuationSheet(test)} implementation={""} />
+                                        : <CodeBlock language="java">{test.body}</CodeBlock>}
+                                    </React.Fragment>
+                                  }
+                                ></ListItemText>
+
+                              </ListItem>
+                            ))}
+                          </List>
+                        </AccordionDetails>
+                      </Accordion>
+                    ))}</>
+                  : null}
+
               </CustomTabPanel>
               {scriptInfo.status === "SUCCESSFUL" ?
-                <CustomTabPanel value={value} index={1}>
-                  <SrmViewer fileName={LassoService.retrieveParquetUrl(scriptInfo.executionId)} />
-                </CustomTabPanel> : null}
+                <>
+                  <CustomTabPanel value={value} index={1}>
+                    <SrmViewer fileName={LassoService.retrieveParquetUrl(scriptInfo.executionId)} />
+                  </CustomTabPanel>
+                  <CustomTabPanel value={value} index={2}>
+                    <React.Fragment>
+                      <Typography variant="h6" component="div">Analyze SRM Data in Jupyter Lite (WASM powered Juyper running in the browser!)</Typography>
+                      <Typography component="div">(note: you can also download the Notebook and run it in your local Juypter environment)</Typography>
+                      <br />
+                      <p><Link target="_blank" href={`${LassoService.API_URL}notebooks/lab/index.html?fromURL=${LassoService.API_URL}publicapi/v1/lasso/analytics/srm/${scriptInfo.executionId}.ipynb`}>Open Notebook</Link></p>
+                    </React.Fragment>
+                  </CustomTabPanel>
+                  <CustomTabPanel value={value} index={3}>
+                    <React.Fragment>
+                      <Typography variant="h6" component="div">Export SRM data as Parquet File</Typography>
+                      <p><Link target="_blank" href={LassoService.retrieveParquetUrl(scriptInfo.executionId)}>Download Link</Link></p>
+                    </React.Fragment>
+
+                  </CustomTabPanel>
+                </>
+
+                : null}
             </Box>
 
           </Grid>
         </Grid> : <CircularProgress size="3rem" />}
+
+      <Divider />
+      <br />
 
       <div className='text--center'>
         <BrowserOnly>

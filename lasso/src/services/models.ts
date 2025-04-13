@@ -34,3 +34,29 @@ export class ScriptInfo {
     content: string;
     owner: string;
 }
+
+export class SearchSrmQueryRequest {
+    executionId: string;
+    forAction!: string;
+}
+
+export class AbstractionInfo {
+    name: string;
+    action: string;
+    specification!: any;
+    codeUnits!: any[];
+}
+
+export class SearchSrmQueryResponse {
+    abstractions: AbstractionInfo[];
+    actions: string[];
+}
+
+
+export class SheetSpec {
+    signature!: string
+    interfaceSpecification!: string
+    body!: string
+    invocations!: string[];
+    implementationId!: string
+}

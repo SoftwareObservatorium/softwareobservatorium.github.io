@@ -139,7 +139,7 @@ study(name: 'BoundedQueue-Mutation') {
         },
         OPENAI_GEN: {
             label: "Generate with OpenAI gpt4-o-mini",
-            description: "Explore how OpenAI's GPT models can be used with LASSO to prompt for code solutions and tests. The functionality sought after is taken from the HumanEval benchmark (e.g., coding problem HumanEval_13_greatest_common_divisor)",
+            description: "Explore how OpenAI's GPT models can be used with LASSO to prompt for code solutions and tests. The functionality sought after is taken from the HumanEval benchmark (e.g., coding problem HumanEval_13_greatest_common_divisor). Note: We strictly advise against using your personal API keys for OpenAI in our LASSO Playground (Demo) Instance.",
             lsl: `dataSource 'lasso_quickstart'
 study(name: 'ChatGPT') {
 

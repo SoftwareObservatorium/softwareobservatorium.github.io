@@ -74,7 +74,7 @@ const SubmitPage = () => {
   };
 
   const execute = async (lslRequest: LslRequest) => {
-    return await Promise.all([AuthService.login("lasso", "lasso").then(
+    return await Promise.all([AuthService.loginDefault().then(
       (response) => {
         // login successful
         console.log("Successfully logged in")
@@ -132,10 +132,18 @@ const SubmitPage = () => {
     <Layout>
       <Head>
         <title>LSL Pipeline Editor</title>
-        <meta name="description" content="A hub for TDSEs" />
+        <meta name="description" content="LSL Editor" />
       </Head>
 
-      <Typography sx={{ margin: 2 }} variant="h5" component="div">Editor<Typography variant="h6" component="div">Write and Submit a LSL Script to the Public LASSO Demo Platform</Typography></Typography>
+      <Typography sx={{ margin: 2 }} variant="h5" component="div">Editor<Typography variant="h6" component="div">Write and Submit a LSL Script to the Public LASSO Demo Platform</Typography>
+      
+      {currentExampleId ?
+            <Typography variant="body2">
+            Example '{HubExamples.MAP[currentExampleId].label}': {HubExamples.MAP[currentExampleId].description}
+          </Typography>
+    :null}
+      
+      </Typography>
 
       <Grid container spacing={2}>
         <Grid size={12}>

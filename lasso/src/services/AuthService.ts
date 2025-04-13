@@ -1,7 +1,8 @@
 import axios from "axios";
 import { User } from "./models";
+import LassoService from "./LassoService";
 
-const API_URL = "https://odisse.informatik.uni-mannheim.de/";
+const API_URL = LassoService.API_URL;
 
 // FIXME
 const register = (username: string, email: string, password: string) => {
@@ -11,6 +12,10 @@ const register = (username: string, email: string, password: string) => {
         password,
     });
 };
+
+const loginDefault = () => {
+    return login("lasso", "lasso")
+}
 
 const login = (username: string, password: string) => {
     return axios
@@ -46,6 +51,7 @@ const isLoggedIn  = () => {
 const AuthService = {
     register,
     login,
+    loginDefault,
     logout,
     getCurrentUser,
     isLoggedIn

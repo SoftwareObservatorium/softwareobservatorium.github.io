@@ -37,7 +37,8 @@
     "react-dom": "^18.0.0",
     "react-pdf": "^9.2.1",
     "react-router": "^7.1.5",
-    "react-router-dom": "^7.1.5"
+    "react-router-dom": "^7.1.5",
+    "react-spreadsheet": "^0.10.1"
   },
   "devDependencies": {
     "@docusaurus/module-type-aliases": "^3.7.0",

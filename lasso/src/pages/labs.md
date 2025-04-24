@@ -23,4 +23,4 @@ The project is actively developed by **David Cebulla**, a business informatics s
 
 ### Preview
 
-Visit the Project Website: Explore the preview version of LSLFlow here: [LSLFlow](https://softwareobservatorium.github.io/lslflow/)
+Visit the Project Website: Explore the preview version of LSLFlow here: [LSLFlow](https://softwareobservatorium.github.io/lslflow/).

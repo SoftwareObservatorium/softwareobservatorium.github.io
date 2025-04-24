@@ -164,7 +164,7 @@ const HubPage = () => {
               </CustomTabPanel>
               <CustomTabPanel value={value} index={1}>
                 <Typography variant="h5" component="div">
-                  <GraphComponent exampleId={currentExampleId} />
+                  <GraphComponent code={HubExamples.MAP[currentExampleId].lsl} />
                 </Typography>
               </CustomTabPanel>
               <CustomTabPanel value={value} index={2}>

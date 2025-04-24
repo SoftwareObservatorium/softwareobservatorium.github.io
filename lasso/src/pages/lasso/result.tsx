@@ -18,6 +18,9 @@ import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import Code from '@mui/icons-material/Code';
 import ActuationSheet from '@site/src/components/Sheet/ActuationSheet';
 import SheetService from '@site/src/components/Sheet/SheetService';
+import AuthService from '@site/src/services/AuthService';
+import { Editor } from '@monaco-editor/react';
+import GraphComponent from '@site/src/components/Graph/graph';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -104,6 +107,26 @@ const ResultPage = () => {
       )
   };
 
+  const login = async () => {
+    await AuthService.loginDefault().then(
+      (response) => {
+        // login successful
+        console.log("Successfully logged in")
+      },
+      (error) => {
+        const resMessage =
+          (error.response &&
+            error.response.data &&
+            error.response.data.message) ||
+          error.message ||
+          error.toString();
+
+        // FIXME
+        console.log("Login attempt failed " + error)
+      }
+    )
+  }
+
   const queryScript = (forAction: string) => {
     const request = new SearchSrmQueryRequest()
     request.executionId = executionId
@@ -137,6 +160,9 @@ const ResultPage = () => {
   };
 
   useEffect(() => {
+    // login
+    login()
+
     intervalRef.current = setInterval(() => {
       checkScriptJobStatus();
       console.log(JSON.stringify(scriptInfo));
@@ -165,6 +191,16 @@ DRAFT
     return () => clearInterval(intervalRef.current);
   })
 
+  const editorRef = useRef<any>(null);
+  const monacoRef = useRef<any>(null);
+
+  function handleEditorDidMount(editor: any, monaco: any) {
+    monaco.languages.register({ id: 'java' });
+
+    monacoRef.current = monaco;
+    editorRef.current = editor;
+  }
+
   return (
     <Layout>
       <Head>
@@ -186,6 +222,7 @@ DRAFT
               <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
                 <Tabs value={value} onChange={handleChange} aria-label="basic tabs example">
                   <Tab label="Overview" {...a11yProps(0)} />
+                  <Tab label="LSL Pipeline" {...a11yProps(1)} />
                   {/* {scriptInfo.status === "SUCCESSFUL" ?
                     <>
                       <Tab label="SRM Explorer" {...a11yProps(1)} />
@@ -194,19 +231,19 @@ DRAFT
                     </>
                     : null} */}
                   {scriptInfo.status === "SUCCESSFUL" ?
-                    <Tab label="SRM Explorer" {...a11yProps(1)} />
+                    <Tab label="SRM Explorer" {...a11yProps(2)} />
                     : null}
                   {scriptInfo.status === "SUCCESSFUL" ?
-                    <Tab label="JupyterLab" {...a11yProps(2)} />
+                    <Tab label="JupyterLab" {...a11yProps(3)} />
                     : null}
                   {scriptInfo.status === "SUCCESSFUL" ?
-                    <Tab label="Export" {...a11yProps(3)} />
+                    <Tab label="Export" {...a11yProps(4)} />
                     : null}
                 </Tabs>
               </Box>
               <CustomTabPanel value={value} index={0}>
                 <Typography variant="h5" component="div">
-                  <p>The execution status of your LSL is <code>{scriptInfo.status}</code> (started {scriptInfo.start})</p>
+                  <p>The execution status of your LSL is <code>{scriptInfo.status}</code> (started {scriptInfo.start.toLocaleString()})</p>
                   {scriptInfo.status === "PENDING" ?
                     <CircularProgress size="3rem" /> : null}
                 </Typography>
@@ -329,12 +366,28 @@ DRAFT
                   : null}
 
               </CustomTabPanel>
+              <CustomTabPanel value={value} index={1}>
+                <CardContent>
+                  <Typography sx={{ margin: 2 }} variant="h5" component="div">LSL Pipeline Viewer<Typography variant="h6" component="div">Explore the study and actions</Typography></Typography>
+                  <Typography variant="h5" component="div">
+                    <Editor
+                      height="500px"
+                      defaultLanguage="java"
+                      defaultValue={scriptInfo.content}
+                      onMount={handleEditorDidMount} />
+                  </Typography>
+                  <br/><Divider/><br/>
+                  <Typography variant="h5" component="div">Graph Viewer
+                  <GraphComponent code={scriptInfo.content} />
+                </Typography>
+                  </CardContent>
+              </CustomTabPanel>
               {scriptInfo.status === "SUCCESSFUL" ?
                 <>
-                  <CustomTabPanel value={value} index={1}>
+                  <CustomTabPanel value={value} index={2}>
                     <SrmViewer fileName={LassoService.retrieveParquetUrl(scriptInfo.executionId)} />
                   </CustomTabPanel>
-                  <CustomTabPanel value={value} index={2}>
+                  <CustomTabPanel value={value} index={3}>
                     <React.Fragment>
                       <Typography variant="h6" component="div">Analyze SRM Data in Jupyter Lite (WASM powered Juyper running in the browser!)</Typography>
                       <Typography component="div">(note: you can also download the Notebook and run it in your local Juypter environment)</Typography>
@@ -342,7 +395,7 @@ DRAFT
                       <p><Link target="_blank" href={`${LassoService.API_URL}notebooks/lab/index.html?fromURL=${LassoService.API_URL}publicapi/v1/lasso/analytics/srm/${scriptInfo.executionId}.ipynb`}>Open Notebook</Link></p>
                     </React.Fragment>
                   </CustomTabPanel>
-                  <CustomTabPanel value={value} index={3}>
+                  <CustomTabPanel value={value} index={4}>
                     <React.Fragment>
                       <Typography variant="h6" component="div">Export SRM data as Parquet File</Typography>
                       <p><Link target="_blank" href={LassoService.retrieveParquetUrl(scriptInfo.executionId)}>Download Link</Link></p>

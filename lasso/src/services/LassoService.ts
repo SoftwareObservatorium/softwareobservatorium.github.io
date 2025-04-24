@@ -14,7 +14,7 @@ const execute = (request: LslRequest) => {
 };
 
 const getScriptJobStatus = (executionId: string) => {
-  return axios.get(`${API_URL}api/v1/lasso/scripts/${executionId}/status`, { headers: authHeader() });
+  return axios.get(`${API_URL}api/v1/lasso/scripts/${executionId}`, { headers: authHeader() });
 };
 
 const queryScript = (request: SearchSrmQueryRequest) => {

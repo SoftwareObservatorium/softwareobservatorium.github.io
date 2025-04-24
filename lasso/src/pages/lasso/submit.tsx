@@ -74,7 +74,7 @@ const SubmitPage = () => {
   };
 
   const execute = async (lslRequest: LslRequest) => {
-    return await Promise.all([AuthService.loginDefault().then(
+    await AuthService.loginDefault().then(
       (response) => {
         // login successful
         console.log("Successfully logged in")
@@ -90,7 +90,9 @@ const SubmitPage = () => {
         // FIXME
         console.log("Login attempt failed " + error)
       }
-    ), LassoService.execute(lslRequest).then(
+    )
+
+    await LassoService.execute(lslRequest).then(
       (response) => {
         let lslResponse: LslResponse = response.data
         console.log("Successfully executed. Execution ID is " + lslResponse.executionId)
@@ -109,7 +111,44 @@ const SubmitPage = () => {
         // FIXME
         console.log("Execute attempt failed " + error)
       }
-    )])
+    )
+
+    // return await Promise.all([AuthService.loginDefault().then(
+    //   (response) => {
+    //     // login successful
+    //     console.log("Successfully logged in")
+    //   },
+    //   (error) => {
+    //     const resMessage =
+    //       (error.response &&
+    //         error.response.data &&
+    //         error.response.data.message) ||
+    //       error.message ||
+    //       error.toString();
+
+    //     // FIXME
+    //     console.log("Login attempt failed " + error)
+    //   }
+    // ), LassoService.execute(lslRequest).then(
+    //   (response) => {
+    //     let lslResponse: LslResponse = response.data
+    //     console.log("Successfully executed. Execution ID is " + lslResponse.executionId)
+
+    //     // redirect to result page
+    //     history.push(`./result?executionId=${lslResponse.executionId}`)
+    //   },
+    //   (error) => {
+    //     const resMessage =
+    //       (error.response &&
+    //         error.response.data &&
+    //         error.response.data.message) ||
+    //       error.message ||
+    //       error.toString();
+
+    //     // FIXME
+    //     console.log("Execute attempt failed " + error)
+    //   }
+    // )])
   };
 
   const editorRef = useRef<any>(null);

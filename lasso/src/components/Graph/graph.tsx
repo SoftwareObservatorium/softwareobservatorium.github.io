@@ -3,11 +3,7 @@ import Grid from '@mui/material/Grid2';
 
 import { Graph } from "react-d3-graph";
 
-import { HubExamples } from '../HubFeatures/HubFeatures';
-
-const GraphComponent = ({ exampleId }: any) => {
-    const code = HubExamples.MAP[exampleId].lsl
-
+const GraphComponent = ({ code }: any) => {
     const actionRegex = /action\(name: '(.*?)'\)/g;
     const includeRegex = /include \'(.*?)'/g;
     const dependsOnRegex = /dependsOn \'(.*?)'/g;

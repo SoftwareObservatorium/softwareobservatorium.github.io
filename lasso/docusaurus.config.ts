@@ -71,6 +71,7 @@ const config: Config = {
           label: 'Documentation',
         },
         {to: '/hub', label: 'TDSEHub (Pipelines)', position: 'left'},
+        {to: '/lasso/search', label: 'Code Search', position: 'left'},
         {to: '/labs', label: 'Labs (Playground)', position: 'left'},
         {to: '/blog', label: 'Blog', position: 'left'},
         {to: '/research/intro', label: 'Research', position: 'left'},
@@ -96,25 +97,29 @@ const config: Config = {
               to: '/docs/intro',
             },
             {
-              label: 'Labs (Playground)',
-              to: '/labs',
-            },
-            {
               label: 'Research',
               to: '/research/intro',
             },
           ],
         },
         {
-          title: 'Community',
+          title: 'Services',
           items: [
             // {
             //   label: 'Stack Overflow',
             //   href: 'https://stackoverflow.com/questions/tagged/docusaurus',
             // },
             {
+              label: 'Labs (Playground)',
+              to: '/labs',
+            },
+            {
               label: 'TDSEHub (Pipelines)',
               href: '/hub',
+            },
+            {
+              label: 'Code Search',
+              href: '/lasso/search',
             },
             // {
             //   label: 'Discord',

@@ -1,249 +1,91 @@
-import { Button, ButtonGroup, CardActions, CardContent, Divider, SelectChangeEvent, Typography } from '@mui/material';
-import React, { useRef, useState } from 'react';
-
-import * as duckdb from '@duckdb/duckdb-wasm';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
+import {
+  Button,
+  ButtonGroup,
+  CardContent,
+  Divider,
+  Typography,
+  Link,
+  CircularProgress,
+  Alert,
+  Box,
+} from '@mui/material';
 import { DataGrid, GridColDef, GridRowsProp, GridToolbar } from '@mui/x-data-grid';
-
-import Link from '@mui/material/Link';
 import { Editor } from '@monaco-editor/react';
+import * as duckdb from '@duckdb/duckdb-wasm';
 import axios from 'axios';
 
-const SrmViewer = ({ fileName}: any) => {
-  // inputs
-  const [executionId, setExecutionId] = useState()
-  const [platformId, setPlatformId] = useState()
-  const [parquetUrl, setParquetUrl] = useState("")
-  const [srmSqlQuery, setSrmSqlQuery] = useState('Select * from tdse_srm.parquet')
-  
-  // references to duckdb
-  const dbRef = useRef<duckdb.AsyncDuckDB>()
+interface SrmViewerProps {
+  fileName: string;
+}
 
-  // data grid
-  const [rows, setRows] = useState<GridRowsProp>([]);
-  const [columns, setColumns] = useState<GridColDef[]>([]);
+type LoadingState = 'unloaded' | 'loading' | 'loaded' | 'error';
 
-  const editorRef = useRef<any>(null);
-  const monacoRef = useRef<any>(null);
-
-  const retrieveParquet = (executionId: string) => {
-    return axios.get(`${fileName}`, {responseType: 'arraybuffer'});
-  };
-  
-  // FIXME initialize duckdb once; initialize a certain parquet once -- separate queries
-  const loadParquet = async (executionId: string, platformId: string, sqlQuery: string) => {
-    if(editorRef.current) {
-      editorRef.current.getModel().setValue(sqlQuery);
-    }
-    
-    if(!dbRef.current) {
-      const JSDELIVR_BUNDLES = duckdb.getJsDelivrBundles();
-
-      // Select a bundle based on browser checks
-      const bundle = await duckdb.selectBundle(JSDELIVR_BUNDLES);
-      
-      const worker_url = URL.createObjectURL(
-        new Blob([`importScripts("${bundle.mainWorker!}");`], {type: 'text/javascript'})
-      );
-      
-      // Instantiate the asynchronus version of DuckDB-Wasm
-      const worker = new Worker(worker_url);
-      const logger = new duckdb.ConsoleLogger();
-      const db = new duckdb.AsyncDuckDB(logger, worker);
-      await db.instantiate(bundle.mainModule, bundle.pthreadWorker);
-      URL.revokeObjectURL(worker_url);
-  
-      // apply config
-      const config: duckdb.DuckDBConfig = {
-        query: {
-            /**
-             * By default, int values returned by DuckDb are Int32Array(2).
-             * This setting tells DuckDB to cast ints to double instead,
-             * so they become JS numbers.
-             */
-            castBigIntToDouble: true,
-        },
-      }
-  
-      db.open(config)
-  
-      console.log("loaded duckdb")
-  
-      // register parquet file
-      //const res = await fetch(parquetPath);
-      let res = (await retrieveParquet("")).data
-  
-      //const res = (await SheetService.retrieveParquet(executionId)).data;
-      await db.registerFileBuffer('tdse_srm.parquet', new Uint8Array(await res));
-  
-      console.log("registered parquet file")
-
-      dbRef.current = db;
-    }
-
-    // Create a new connection
-    const conn = await dbRef.current.connect();
-
-    // Query
-    const arrowResult = await conn.query(`
-        ${sqlQuery}
-    `);
-
-    // Convert arrow table to json
-    const result = arrowResult.toArray().map((row) => row.toJSON());
-
-    //console.log(result)
-    // const headers = Object.keys(result[0]);
-    // const rowsSS: object[][] = result.map(item => Object.values(item));
-    // setTableHeaders(headers)
-    // setTableRows(rowsSS)
-
-    // react-data-grid https://mui.com/x/react-data-grid/getting-started/
-    const columns: GridColDef[] = Object.keys(result[0]).map(col => { return {field: col, headerName: col, width: 150} })
-    //columns.push({field: "id", headerName: "ID", width: 150})
-    setColumns(columns)
-    const rows: GridRowsProp = result
-    setRows(rows)
-
-    // Close the connection to release memory
-    await conn.close();
-  }
-
-  const doLoad = () => {
-    loadParquet(executionId, platformId, 'Select * from tdse_srm.parquet');
-  }
-
-  const doQuery = () => {
-    loadParquet(executionId, platformId, srmSqlQuery);
-    setSrmSqlQuery(srmSqlQuery);
-  }
-
-  const executeQuery = (query: string) => {
-    loadParquet(executionId, platformId, query);
-    setSrmSqlQuery(query);
-  }
-
-  const doSrmQuery = (observationType: string | undefined) => {
-    let sqlQuery;
-    if(observationType) {
-      sqlQuery = `PIVOT (SELECT SHEETID, X, Y, CONCAT(SYSTEMID,'_',VARIANTID,'_',ADAPTERID) as SYSTEMID, value from tdse_srm.parquet where type = '${observationType}') ON SYSTEMID USING first(VALUE) ORDER BY SHEETID, X, Y`
-    } else {
-      sqlQuery = `PIVOT (SELECT SHEETID, X, Y, CONCAT(SYSTEMID,'_',VARIANTID,'_',ADAPTERID) as SYSTEMID, value, type from tdse_srm.parquet) ON SYSTEMID USING first(VALUE) ORDER BY SHEETID, X, Y`
-    }
-
-    setSrmSqlQuery(sqlQuery)
-    loadParquet(executionId, platformId, sqlQuery);
-  }
-
-  const handleSrmPathChange = (event: any) => {
-    setExecutionId(event.target.value)
-  }
-
-  const handlePlatformIdChange = (event: SelectChangeEvent) => {
-    setPlatformId(event.target.value);
-  };
-
-    // FIXME broken (https://duckdb.org/docs/api/wasm/query)
-  const exportParquet = async () => {
-    // Create a new connection
-    if(dbRef.current) {
-      const conn = await dbRef.current.connect();
-      // Export Parquet
-      await conn.send(`COPY (SELECT * FROM tdse_srm.parquet) TO 'result-snappy.parquet' (FORMAT PARQUET);`);
-      const parquet_buffer = await dbRef.current.copyFileToBuffer('result-snappy.parquet');
-  
-      // Generate a download link
-      const url = URL.createObjectURL(new Blob([parquet_buffer]));
-
-      const downloadLink = React.createElement('a', { download: 'result-snappy.parquet', href: url}, 'download');
-
-      await conn.close();
-
-      return downloadLink;
-    }
-
-    return null;
-  }
-  
-    function handleEditorDidMount(editor: any, monaco: any) {
-      monaco.languages.register({ id: 'sql' });
-  
-      monacoRef.current = monaco;
-      editorRef.current = editor ; 
-    }
-  
-    const onSqlValidate = (sql: string | undefined, ev: monaco.editor.IModelContentChangedEvent) => {  
-      if(sql) {
-        setSrmSqlQuery(sql);
-      }
-    }
-  
-  return (
-    <React.Fragment>
-      <Typography variant="h6" component="div">Explore SRM data using duckdb in your browser</Typography>
-      
-      <CardContent>
-        <Typography gutterBottom sx={{ color: 'text.secondary', fontSize: 18 }}>
-          SQL (duckdb-wasm)
-        </Typography>
-        <Typography variant="h5" component="div">
-      <Editor
-        height="100px"
-        defaultLanguage="sql"
-        defaultValue={srmSqlQuery}
-        onMount={handleEditorDidMount}
-        onChange={onSqlValidate}
-      />
-        </Typography>
-      </CardContent>
-      <CardActions>
-
-
-      </CardActions>
-
-      <ButtonGroup variant="contained" aria-label="Basic button group">
-            <Button onClick={(event) => doLoad()}>Load Raw SRM parquet</Button>
-            <Button onClick={(event) => doQuery()}>Query SQL</Button>
-            <Button onClick={(event) => executeQuery('select SHEETID from tdse_srm.parquet group by SHEETID order by SHEETID')}>Show Tests</Button>
-            <Button onClick={(event) => executeQuery('select SHEETID, X, Y from tdse_srm.parquet where X >= 0 and Y >= 0 group by SHEETID, X, Y order by SHEETID, X, Y')}>Show Test Statements</Button>
-            
-            <Button onClick={(event) => executeQuery("select SYSTEMID from tdse_srm.parquet where SYSTEMID != 'abstraction' and SYSTEMID != 'oracle' group by SYSTEMID")}>Show Compilation Units</Button>
-            <Button onClick={(event) => executeQuery("select SYSTEMID, VARIANTID, ADAPTERID from tdse_srm.parquet where SYSTEMID != 'abstraction' and SYSTEMID != 'oracle' group by SYSTEMID, VARIANTID, ADAPTERID")}>Show Executed Implementations</Button>
-            
-            <Button onClick={(event) => doSrmQuery('value')}>View Outputs</Button>
-            <Button onClick={(event) => doSrmQuery('service')}>View Services</Button>
-            <Button onClick={(event) => doSrmQuery('input_value')}>View Inputs</Button>
-            <Button onClick={(event) => doSrmQuery('op')}>View Operations</Button>
-            <Button onClick={(event) => doSrmQuery(undefined)}>View All</Button>
-          </ButtonGroup>
-
-          <Divider />
-
-          <ButtonGroup variant="contained" aria-label="Basic button group">
-            <Button onClick={(event) => executeQuery("select count(*) as cluster_size, list(SYSTEMID) as cluster_implementations, * EXCLUDE (SYSTEMID) from (PIVOT (SELECT CONCAT(SHEETID,'@',X, ',', Y) as statement, CONCAT(SYSTEMID,'_',VARIANTID,'_',ADAPTERID) as SYSTEMID, value from tdse_srm.parquet where type = 'value') ON STATEMENT USING first(VALUE) ORDER BY SYSTEMID) as mypiv group by all order by cluster_size DESC")}>Cluster-based Voting</Button>
-            <Button onClick={(event) => executeQuery("select count(*) as cluster_size, list(SYSTEMID) as cluster_implementations, * EXCLUDE (SYSTEMID) from (PIVOT (SELECT CONCAT(SHEETID,'@',X, ',', Y) as statement, CONCAT(SYSTEMID,'_',VARIANTID,'_',ADAPTERID) as SYSTEMID, value from tdse_srm.parquet where type = 'value' and y > 0) ON STATEMENT USING first(VALUE) ORDER BY SYSTEMID) as mypiv group by all order by cluster_size DESC")}>Cluster-based Voting (Ignore Create)</Button>
-            
-
-            {/* <Button onClick={(event) => executeQuery("from (PIVOT (SELECT CONCAT(SHEETID,'@',X, ',', Y) as statement, CONCAT(SYSTEMID,'_',VARIANTID,'_',ADAPTERID) as SYSTEMID, value from tdse_srm.parquet where type = 'value') ON STATEMENT USING first(VALUE) ORDER BY SYSTEMID) select mode(COLUMNS(*))")}>Test-based Voting</Button>
-            <Button onClick={(event) => executeQuery("from (PIVOT (SELECT CONCAT(SHEETID,'@',X, ',', Y) as statement, CONCAT(SYSTEMID,'_',VARIANTID,'_',ADAPTERID) as SYSTEMID, value from tdse_srm.parquet where type = 'value' and y > 0) ON STATEMENT USING first(VALUE) ORDER BY SYSTEMID) select mode(COLUMNS(*))")}>Test-based Voting (Ignore Create)</Button> */}
-          </ButtonGroup>
-
-          <Divider />
-
-          <ButtonGroup variant="contained" aria-label="Basic button group">
-            {/* <Button onClick={(event) => executeQuery(`
--- pick oracle based on clustering-based voting
-select ABSTRACTIONID, SHEETID, X, Y, VALUE as cluster_based_oracle from tdse_srm.parquet where type = 'value' and CONCAT(SYSTEMID,'_',VARIANTID,'_',ADAPTERID) = (
-select impl_match from 
-(select
-    count(*) as cluster_size,
-    first(SYSTEMID) as impl_match,
-    * EXCLUDE (SYSTEMID)
-from (PIVOT (SELECT SHEETID, X, Y, CONCAT(SYSTEMID,'_',VARIANTID,'_',ADAPTERID) as SYSTEMID, value from tdse_srm.parquet where type = 'value') ON SHEETID, X, Y USING first(VALUE) ORDER BY SYSTEMID) as mypiv group by all order by cluster_size DESC limit 1)
-) order by SHEETID, X, Y
-              `)}>Cluster-based Oracle</Button> */}
-            <Button onClick={(event) => executeQuery(`
--- pick oracle based on test-based voting (based on mode; most frequent value per test statement)
-Select 
+const ALL_BUTTONS: { group: string; buttons: { label: string; sql: string }[] }[] = [
+  {
+    group: 'SRM Basic Views',
+    buttons: [
+      { label: 'Load Raw SRM parquet', sql: 'SELECT * FROM tdse_srm.parquet' },
+      { label: 'Query SQL', sql: '' }, // This calls current editor value (see below)
+      {
+        label: 'Show Tests',
+        sql: 'SELECT SHEETID FROM tdse_srm.parquet GROUP BY SHEETID ORDER BY SHEETID',
+      },
+      {
+        label: 'Show Test Statements',
+        sql: `SELECT SHEETID, X, Y FROM tdse_srm.parquet WHERE X >= 0 AND Y >= 0 GROUP BY SHEETID, X, Y ORDER BY SHEETID, X, Y`,
+      },
+      {
+        label: 'Show Compilation Units',
+        sql: `SELECT SYSTEMID FROM tdse_srm.parquet WHERE SYSTEMID != 'abstraction' AND SYSTEMID != 'oracle' GROUP BY SYSTEMID`,
+      },
+      {
+        label: 'Show Executed Implementations',
+        sql: `SELECT SYSTEMID, VARIANTID, ADAPTERID FROM tdse_srm.parquet WHERE SYSTEMID != 'abstraction' AND SYSTEMID != 'oracle' GROUP BY SYSTEMID, VARIANTID, ADAPTERID`,
+      },
+      {
+        label: 'View Outputs',
+        sql: `PIVOT (SELECT SHEETID, X, Y, CONCAT(SYSTEMID,'_',VARIANTID,'_',ADAPTERID) AS SYSTEMID, value FROM tdse_srm.parquet WHERE type = 'value') ON SYSTEMID USING first(VALUE) ORDER BY SHEETID, X, Y`,
+      },
+      {
+        label: 'View Services',
+        sql: `PIVOT (SELECT SHEETID, X, Y, CONCAT(SYSTEMID,'_',VARIANTID,'_',ADAPTERID) AS SYSTEMID, value FROM tdse_srm.parquet WHERE type = 'service') ON SYSTEMID USING first(VALUE) ORDER BY SHEETID, X, Y`,
+      },
+      {
+        label: 'View Inputs',
+        sql: `PIVOT (SELECT SHEETID, X, Y, CONCAT(SYSTEMID,'_',VARIANTID,'_',ADAPTERID) AS SYSTEMID, value FROM tdse_srm.parquet WHERE type = 'input_value') ON SYSTEMID USING first(VALUE) ORDER BY SHEETID, X, Y`,
+      },
+      {
+        label: 'View Operations',
+        sql: `PIVOT (SELECT SHEETID, X, Y, CONCAT(SYSTEMID,'_',VARIANTID,'_',ADAPTERID) AS SYSTEMID, value FROM tdse_srm.parquet WHERE type = 'op') ON SYSTEMID USING first(VALUE) ORDER BY SHEETID, X, Y`,
+      },
+      {
+        label: 'View All',
+        sql: `PIVOT (SELECT SHEETID, X, Y, CONCAT(SYSTEMID,'_',VARIANTID,'_',ADAPTERID) AS SYSTEMID, value, type FROM tdse_srm.parquet) ON SYSTEMID USING first(VALUE) ORDER BY SHEETID, X, Y`,
+      },
+    ],
+  },
+  {
+    group: 'Cluster-based Voting',
+    buttons: [
+      {
+        label: 'Cluster-based Voting',
+        sql: `SELECT count(*) AS cluster_size, list(SYSTEMID) AS cluster_implementations, * EXCLUDE (SYSTEMID) FROM (PIVOT (SELECT CONCAT(SHEETID,'@',X, ',', Y) as statement, CONCAT(SYSTEMID,'_',VARIANTID,'_',ADAPTERID) as SYSTEMID, value from tdse_srm.parquet where type = 'value') ON STATEMENT USING first(VALUE) ORDER BY SYSTEMID) as mypiv group by all order by cluster_size DESC`,
+      },
+      {
+        label: 'Cluster-based Voting (Ignore Create)',
+        sql: `SELECT count(*) AS cluster_size, list(SYSTEMID) AS cluster_implementations, * EXCLUDE (SYSTEMID) FROM (PIVOT (SELECT CONCAT(SHEETID,'@',X, ',', Y) as statement, CONCAT(SYSTEMID,'_',VARIANTID,'_',ADAPTERID) as SYSTEMID, value from tdse_srm.parquet where type = 'value' and y > 0) ON STATEMENT USING first(VALUE) ORDER BY SYSTEMID) as mypiv group by all order by cluster_size DESC`,
+      },
+      // Test-based voting commented out in original; can uncomment if needed!
+    ],
+  },
+  {
+    group: 'Test-based Oracle',
+    buttons: [
+      {
+        label: 'Test-based Oracle',
+        sql: `
+SELECT 
     ABSTRACTIONID,
     SHEETID,
     X,
@@ -252,10 +94,12 @@ Select
     list(DISTINCT VALUE) as distinct_values,
     (select list(CONCAT(SYSTEMID, '_', VARIANTID, '_', ADAPTERID) ORDER BY SYSTEMID, VARIANTID, ADAPTERID) from tdse_srm.parquet where VALUE = test_based_oracle and TYPE = 'value' and ABSTRACTIONID = tbl1.ABSTRACTIONID and SHEETID = tbl1.SHEETID and X = tbl1.X and Y=tbl1.Y) as matches
 from tdse_srm.parquet as tbl1 where TYPE = 'value' and SYSTEMID != 'oracle' GROUP BY ABSTRACTIONID, SHEETID, X, Y ORDER BY SHEETID, X, Y
-              `)}>Test-based Oracle</Button>
-            <Button onClick={(event) => executeQuery(`
--- pick oracle based on test-based voting (based on mode; most frequent value per test statement)
-Select 
+        `.trim(),
+      },
+      {
+        label: 'Test-based Oracle (Ignore Create)',
+        sql: `
+SELECT 
     ABSTRACTIONID,
     SHEETID,
     X,
@@ -264,20 +108,216 @@ Select
     list(DISTINCT VALUE) as distinct_values,
     (select list(CONCAT(SYSTEMID, '_', VARIANTID, '_', ADAPTERID) ORDER BY SYSTEMID, VARIANTID, ADAPTERID) from tdse_srm.parquet where VALUE = test_based_oracle and TYPE = 'value' and ABSTRACTIONID = tbl1.ABSTRACTIONID and SHEETID = tbl1.SHEETID and X = tbl1.X and Y=tbl1.Y) as matches
 from tdse_srm.parquet as tbl1 where TYPE = 'value' and SYSTEMID != 'oracle' and Y > 0 GROUP BY ABSTRACTIONID, SHEETID, X, Y ORDER BY SHEETID, X, Y
-              `)}>Test-based Oracle (Ignore Create)</Button>
-          </ButtonGroup>
+        `.trim(),
+      },
+    ],
+  },
+];
 
-          <Divider />
-          <Link target="_blank" href={fileName}>Download Raw Parquet</Link>
+export const SrmViewer: React.FC<SrmViewerProps> = ({ fileName }) => {
+  const [sqlQuery, setSqlQuery] = useState('SELECT * FROM tdse_srm.parquet');
+  const [rows, setRows] = useState<GridRowsProp>([]);
+  const [columns, setColumns] = useState<GridColDef[]>([]);
+  const [loadingState, setLoadingState] = useState<LoadingState>('unloaded');
+  const [error, setError] = useState<string | null>(null);
 
-      <Divider />
+  const dbRef = useRef<duckdb.AsyncDuckDB>();
+  const isParquetLoaded = useRef(false);
 
-      <div style={{ height: '500px', width: '100%' }}>
-        <DataGrid slots={{ toolbar: GridToolbar }} rows={rows} columns={columns} getRowId={(row: any) => /* FIXME unique ID required */ Math.floor(Math.random() * 100000000)} />
-      </div>
+  // DataGrid expects a stable and unique id. Try to infer a good key.
+  // const inferId = (row: any, i: number) => {
+  //   if ("ROWID" in row) return row.ROWID;
+  //   if ("id" in row) return row.id;
+  //   // Or compose from key fields, fallback to index
+  //   return (
+  //     // Try to combine keys that are present
+  //     ["SHEETID", "X", "Y", "SYSTEMID", "STATEMENT"]
+  //       .map((k) => row[k])
+  //       .filter(Boolean)
+  //       .join("_") || i
+  //   );
+  // };
 
-    </React.Fragment>
+  // --- DuckDB init & Parquet registration; only runs ONCE per session
+  const ensureDuckDbReady = useCallback(async () => {
+    if (dbRef.current && isParquetLoaded.current) return dbRef.current;
+
+    setLoadingState('loading');
+    setError(null);
+
+    try {
+      // DuckDB boot
+      const JSDELIVR_BUNDLES = duckdb.getJsDelivrBundles();
+      const bundle = await duckdb.selectBundle(JSDELIVR_BUNDLES);
+      const worker_url = URL.createObjectURL(
+        new Blob([`importScripts("${bundle.mainWorker!}");`], { type: 'text/javascript' })
+      );
+      const worker = new Worker(worker_url);
+      URL.revokeObjectURL(worker_url);
+
+      const logger = new duckdb.ConsoleLogger();
+      const db = new duckdb.AsyncDuckDB(logger, worker);
+      await db.instantiate(bundle.mainModule, bundle.pthreadWorker);
+      await db.open({ query: { castBigIntToDouble: true } });
+
+      // Register Parquet
+      const { data } = await axios.get(fileName, { responseType: 'arraybuffer' });
+      await db.registerFileBuffer('tdse_srm.parquet', new Uint8Array(data));
+
+      dbRef.current = db;
+      isParquetLoaded.current = true;
+      setLoadingState('loaded');
+      return db;
+    } catch (e: any) {
+      setError(`Initialization failed: ${e?.message ?? e}`);
+      setLoadingState('error');
+      throw e;
+    }
+  }, [fileName]);
+
+  // --- Query execution
+  const runQuery = useCallback(
+    async (query: string) => {
+      setLoadingState('loading');
+      setError(null);
+      try {
+        const db = await ensureDuckDbReady();
+        if (!db) throw new Error('DuckDB/Parquet not loaded');
+        const conn = await db.connect();
+
+        const arrowResult = await conn.query(query);
+
+        const array = arrowResult.toArray().map((row: any) => row.toJSON());
+        //console.log(array)
+        const autoColumns: GridColDef[] =
+          array[0]
+            ? Object.keys(array[0]).map((col) => ({
+                field: col,
+                headerName: col,
+                width: 180 + 60 * Math.min(3, String(array[0][col]).length / 10),
+              }))
+            : [];
+
+        setColumns(autoColumns);
+        setRows(
+          array//.map((row: any, i: number) => ({ id: inferId(row, i), ...row }))
+        );
+
+        setLoadingState('loaded');
+        await conn.close();
+      } catch (e: any) {
+        setError(`DuckDB query failed: ${e?.message ?? e}`);
+        setLoadingState('error');
+      }
+    },
+    [ensureDuckDbReady]
   );
-}
+
+  // Run initial query on mount (for default/auto load)
+  useEffect(() => {
+    runQuery(sqlQuery);
+    // eslint-disable-next-line
+  }, []);
+
+  // -- Handle Monaco editor SQL update
+  const handleEditorChange = (
+    value: string | undefined /*, ev: monaco.editor.IModelContentChangedEvent */
+  ) => {
+    setSqlQuery(value ?? '');
+  };
+
+  // --- Button click helpers
+  const handleButtonClick = (sql: string, label: string) => {
+    // "Query SQL" uses the current SQL query from the editor
+    if (label === 'Query SQL') {
+      runQuery(sqlQuery);
+    } else {
+      setSqlQuery(sql);
+      runQuery(sql);
+    }
+  };
+
+  return (
+    <Box sx={{ p: 2 }}>
+      <Typography variant="h5" mb={1}>
+        Explore SRM data using DuckDB (WASM)
+      </Typography>
+
+      <CardContent>
+        <Typography sx={{ color: 'text.secondary', fontSize: 18 }}>
+          SQL Editor (DuckDB in your browser)
+        </Typography>
+        <Editor
+          height="120px"
+          defaultLanguage="sql"
+          value={sqlQuery}
+          onChange={handleEditorChange}
+          options={{ fontSize: 14, minimap: { enabled: false }, wordWrap: 'on' }}
+        />
+        <Button
+          sx={{ mt: 2 }}
+          variant="contained"
+          onClick={() => runQuery(sqlQuery)}
+          disabled={loadingState === 'loading'}
+        >
+          Run Query
+        </Button>
+      </CardContent>
+
+      {ALL_BUTTONS.map((group, idx) => (
+        <React.Fragment key={group.group}>
+          <Divider sx={{ my: 2 }} />
+          <Typography sx={{ fontWeight: 'bold', mb: 1 }} variant="body1">
+            {group.group}
+          </Typography>
+          <ButtonGroup
+            variant="contained"
+            size="small"
+            aria-label={group.group}
+            sx={{ flexWrap: 'wrap', mb: 1 }}
+          >
+            {group.buttons.map((btn) => (
+              <Button
+                key={btn.label}
+                sx={{ textTransform: 'none' }}
+                onClick={() => handleButtonClick(btn.sql, btn.label)}
+              >
+                {btn.label}
+              </Button>
+            ))}
+          </ButtonGroup>
+        </React.Fragment>
+      ))}
+
+      <Divider sx={{ my: 2 }} />
+
+      <Box sx={{ mb: 2 }}>
+        <Link href={fileName} target="_blank" rel="noopener">
+          Download Raw Parquet
+        </Link>
+      </Box>
+
+      {loadingState === 'loading' && (
+        <Box sx={{ my: 4, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+          <CircularProgress />
+          <Typography mt={1}>Loading SRM data...</Typography>
+        </Box>
+      )}
+
+      {error && <Alert severity="error">{error}</Alert>}
+
+      <Box sx={{ height: 500, width: '100%' }}>
+        <DataGrid
+          slots={{ toolbar: GridToolbar }}
+          rows={rows}
+          columns={columns}
+          getRowId={(row: any) => /* FIXME unique ID required */ Math.floor(Math.random() * 100000000)}
+          disableRowSelectionOnClick
+          sx={{ mt: 1 }}
+        />
+      </Box>
+    </Box>
+  );
+};
 
 export default SrmViewer;

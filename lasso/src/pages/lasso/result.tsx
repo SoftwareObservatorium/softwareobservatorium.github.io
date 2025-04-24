@@ -320,6 +320,18 @@ DRAFT
                                         <small>{codeUnit.id}</small>
                                       </Typography>
                                       <CodeBlock language="java">{codeUnit.content ? codeUnit.content : "n/a"}</CodeBlock>
+
+                                      <Typography variant="body2" color="text.secondary">
+                                        Learn more about <b>this code module</b>:
+                                      </Typography>
+                                      <Link
+                                        href={`/web/lasso/search?query=*:*&filter=id:${codeUnit.id}&ds=lasso_quickstart`}
+                                        target="_blank"
+                                        rel="noopener"
+                                        underline="hover"
+                                      >
+                                        Details
+                                      </Link>
                                     </React.Fragment>
                                   }
                                 ></ListItemText>
@@ -376,11 +388,11 @@ DRAFT
                       defaultValue={scriptInfo.content}
                       onMount={handleEditorDidMount} />
                   </Typography>
-                  <br/><Divider/><br/>
+                  <br /><Divider /><br />
                   <Typography variant="h5" component="div">Graph Viewer
-                  <GraphComponent code={scriptInfo.content} />
-                </Typography>
-                  </CardContent>
+                    <GraphComponent code={scriptInfo.content} />
+                  </Typography>
+                </CardContent>
               </CustomTabPanel>
               {scriptInfo.status === "SUCCESSFUL" ?
                 <>

@@ -1,6 +1,6 @@
 import axios from "axios";
 import authHeader from "./authheader";
-import { LslRequest, SearchSrmQueryRequest } from "./models";
+import { LslRequest, SearchQueryRequest, SearchSrmQueryRequest } from "./models";
 
 const API_URL = "https://odisse.informatik.uni-mannheim.de/";
 //const API_URL = "http://localhost:10222/";
@@ -30,6 +30,10 @@ const retrieveParquetUrl = (executionId: string) => {
   return API_URL + "publicapi/v1/lasso/analytics/raw/srm/" + executionId + "_all.parquet";
 };
 
+const queryImplementationsForDataSource = (dataSource: string, request: SearchQueryRequest) => {
+  return axios.post(`${API_URL}api/v1/lasso/datasource/${dataSource}/query`, request, { headers: authHeader() });
+};
+
 const LassoService = {
     getProfile,
     execute,
@@ -37,6 +41,7 @@ const LassoService = {
     queryScript,
     retrieveParquet,
     retrieveParquetUrl,
+    queryImplementationsForDataSource,
     API_URL
 };
 

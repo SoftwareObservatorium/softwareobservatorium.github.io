@@ -60,3 +60,77 @@ export class SheetSpec {
     invocations!: string[];
     implementationId!: string
 }
+
+export class SearchQueryRequest {
+    query: string
+    filters: string[]
+    sortyBy: string[]
+
+    oracleFilters: any;
+
+    strategy: string
+
+    start: number
+    rows: number
+
+    executionId: string
+
+    forAction: string
+}
+
+export class SearchQueryResponse {
+    implementations: Map<string, Object>;
+
+    total: number
+    rows: number
+
+    actions: string[]
+}
+
+export class TextualSearch {
+    lql: string;
+    filters: string[];
+    strategy: string;
+}
+
+export type CodeSnippet = {
+    clonesDetected: any; // You can further type these
+    workerNodeId: string | null;
+    id: string;
+    dataSource: string;
+    parentId: string | null;
+    name: string;
+    packagename: string;
+    bytecodeName: string;
+    groupId: string;
+    artifactId: string;
+    version: string;
+    classifier: string | null;
+    score: number;
+    content: string;
+    hash: string;
+    type1Hash: string | null;
+    docType: string;
+    type: string;
+    methods: string[];
+    superClasses: string[];
+    interfaces: string[] | null;
+    dependencies: string[];
+    measures: { [k: string]: number };
+    metaData: {
+      meta_dependency_ss?: string[];
+      meta_name_s?: string[];
+      meta_url_s?: string[];
+      meta_description_s?: string[];
+    };
+    inheritedMethods: any[];
+    alternatives: any[];
+    clones: any[];
+    similar: any[];
+    type1Clones: any;
+    unitType: string;
+    methodSignatureParamsOrderedKeywordsFq: string[];
+    methodNames: string[];
+    methodBytecodeNames: string[];
+    lql: string;
+  };

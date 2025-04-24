@@ -15,8 +15,8 @@ npm install --force
 
 Note: `--force` because there are some third-party libraries with react version conflicts
 
-# serve
-npm run serve
+# start
+npm run start
 
 # build
 npm run build

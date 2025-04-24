@@ -301,7 +301,21 @@ DRAFT
                             {ab.codeUnits.length} Code Module(s)
                           </Typography>
 
-                          <List dense={true}>
+                          <br />
+                          <Typography variant="body2" color="text.secondary">
+                            <Link
+                              href={`/web/lasso/search?query=*:*&filter=executionId:${executionId}&ds=lasso_quickstart`}
+                              target="_blank"
+                              rel="noopener"
+                              underline="hover"
+                            >
+                              Click here
+                            </Link> to view all <b>code modules</b>.
+                          </Typography>
+                          <br />
+
+
+                          {/* <List dense={true}>
 
                             {ab.codeUnits.map((codeUnit) => (
                               <ListItem key={codeUnit.id}>
@@ -338,7 +352,7 @@ DRAFT
 
                               </ListItem>
                             ))}
-                          </List>
+                          </List> */}
 
                           <Typography>
                             {ab.specification.tests.length} Test(s)

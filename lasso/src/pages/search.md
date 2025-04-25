@@ -23,11 +23,11 @@ LASSO's Sequence Sheet Notation (SSN) allows for a unique form of code search ba
 
 **Learn More & Get Started:**
 
-*   [**Try the Test-Driven Code Search**](lasso/tds) - Begin exploring code based on your SSN test specifications.
+*   [**Try the Test-Driven Code Search**](lasso/ssn?recommendation=search) - Begin exploring code based on your SSN test specifications.
 *   [**SSN Documentation**](docs/datastructures/ssn) - Understand the structure and capabilities of SSN for defining test specifications.
 
 ### Examples
 
 (under construction)
 
-* [**Base64 encoding**](lasso/tds?example=BASE64)
+* [**Base64 encoding**](lasso/ssn?recommendation=search&example=BASE64)

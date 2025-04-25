@@ -21,19 +21,19 @@ const SEQ_SHEET_DEFAULT: SequenceSheetData = {
     invocations: []
 };
 
-const LSL_TEMPLATE = `dataSource 'mavenCentral2023'
+const TDS_LSL_TEMPLATE = `dataSource 'mavenCentral2023'
 study(name: 'TDSGenerated') {
 
-      profile('java17Profile') {
-        scope('class') { type = 'class' }
-        environment('java17') {
-          image = 'maven:3.9-eclipse-temurin-17' // docker image (JDK 17)
-        }
-      }
+    profile('java17Profile') {
+    scope('class') { type = 'class' }
+    environment('java17') {
+        image = 'maven:3.9-eclipse-temurin-17' // docker image (JDK 17)
+    }
+    }
       
     action(name: 'createStimulusMatrix') {
         execute {
-            stimulusMatrix('Base64', """{{INTERFACE}}""", [/*impls*/], {{TESTS}})
+            stimulusMatrix('myAb', """{{INTERFACE}}""", [/*impls*/], {{TESTS}})
         }
     }
 
@@ -56,7 +56,73 @@ study(name: 'TDSGenerated') {
         maxAdaptations = 1 // how many adaptations to try
 
         dependsOn 'select'
-        include 'Base64'
+        include '*'
+        profile('java17Profile')
+    }
+}`
+
+const GEN_LSL_TEMPLATE = `dataSource 'lasso_quickstart'
+study(name: 'GenChatGPT') {
+
+    // target profile
+    profile('java17Profile') {
+        scope('class') { type = 'class' }
+        environment('java17') {
+            image = 'maven:3.9-eclipse-temurin-17'
+        }
+    }
+
+    action(name: 'createStimulusMatrix') {
+        execute {
+            stimulusMatrix('myAb', """{{INTERFACE}}""", [/*impls*/], {{TESTS}})
+        }
+    }
+
+    action(name: 'generateCodeGpt', type: 'GenerateCodeOpenAI') {
+        // pipeline specific
+        dependsOn 'createStimulusMatrix'
+        include '*'
+        profile('java17Profile')
+
+        // action configuration block
+        apiKey = "demo" // see https://docs.langchain4j.dev/integrations/language-models/open-ai/
+        model = "gpt-4o-mini"
+        samples = 1
+
+        // custom DSL command offered by the action (for each stimulus matrix, create one prompt to obtain impls)
+        prompt { stimulusMatrix ->
+            // can by for any prompts: FA, impls, models etc.
+            def prompt = [:] // create prompt model
+            prompt.promptContent = """implement a java class with the following interface specification, but do not inherit a java interface: \`\`\`\${stimulusMatrix.lql}\`\`\`. Only output the java class and nothing else."""
+            prompt.id = "lql_prompt"
+            return [prompt] // list of prompts is expected
+        }
+    }
+
+    action(name: 'generateTestsGpt', type: 'GenerateTestsOpenAI') {
+        // pipeline specific
+        dependsOn 'generateCodeGpt'
+        include '*'
+        profile('java17Profile')
+
+        // action configuration block
+        apiKey = "demo" // see https://docs.langchain4j.dev/integrations/language-models/open-ai/
+        model = "gpt-4o-mini"
+        samples = 1
+
+        prompt { stimulusMatrix ->
+            def prompt = [:] // create prompt model
+            prompt.promptContent = """generate a junit test class to test the functionality of the following interface specification: \`\`\`\${stimulusMatrix.lql}\`\`\`. Assume that the specification is encapsulated in a class that uses the same naming as in the interface specification. Only output the JUnit test class and nothing else."""
+            prompt.id = "lql_prompt"
+            return [prompt] // list of prompts is expected
+        }
+    }
+
+    action(name: 'execute', type: 'Arena') {
+        maxAdaptations = 1 // how many adaptations to try
+
+        dependsOn 'generateTestsGpt'
+        include '*'
         profile('java17Profile')
     }
 }`
@@ -68,13 +134,27 @@ function fillTemplate(template: string, values: Record<string, string | number>)
 }
 
 export default function SequenceSheetEditorsPage() {
-    const location = useLocation()
     const history = useHistory()
 
-    const [currentExampleId, setCurrentExampleId] = useState(location.search.split('=')[1])
+    // Only run in browser context
+    let exampleId = ""
+    let recommendation = "search"
+    if (typeof window != "undefined") {
+        const searchParams = new URLSearchParams(window.location.search);
+
+        exampleId = searchParams.get("example") ?? "";
+        recommendation = searchParams.get("recommendation") ?? "search";
+
+        console.log(exampleId)
+        console.log(recommendation)
+    }
+
+    const [currentExampleId, setCurrentExampleId] = useState(exampleId)
+    const [recommendationType, setRecommendationType] = useState(recommendation)
 
     const [sheets, setSheets] = useState<SequenceSheetData[]>([]);
     const [interfaceSpec, setInterfaceSpec] = useState<string>(``);
+
     const [generatedLSL, setGeneratedLSL] = useState<string>("");
 
     const editorRef = useRef<any>(null);
@@ -94,7 +174,9 @@ export default function SequenceSheetEditorsPage() {
 
         const groovyBlock = sequenceSheetsToGroovyDSL(jsonSheets)
 
-        const result = fillTemplate(LSL_TEMPLATE, {
+        const lslTemplate = recommendationType === "search" ? TDS_LSL_TEMPLATE : GEN_LSL_TEMPLATE
+
+        const result = fillTemplate(lslTemplate, {
             INTERFACE: interfaceSpec,
             TESTS: groovyBlock,
             ROWS: 10 // FIXME rows
@@ -189,9 +271,9 @@ export default function SequenceSheetEditorsPage() {
     }
 
     useEffect(() => {
-        if(currentExampleId) {
+        if (currentExampleId) {
             console.log("example " + currentExampleId)
-    
+
             const example = TDSExamples.MAP[currentExampleId]
             setSheets(example.sheets.map(s => {
                 const sheetResult: any = jsonlToRows(s.jsonl);
@@ -204,22 +286,26 @@ export default function SequenceSheetEditorsPage() {
                     rows: sheetResult.rows,
                     columns: sheetResult.cols,
                     invocations: s.invocations
-                  }
+                }
                 return sheet
             }))
             setInterfaceSpec(example.lql)
         }
-      }, []);
+    }, []);
 
     return (
         <Layout>
             <Head>
-                <title>Test-driven Code Search</title>
-                <meta name="description" content="Test-driven Code Search" />
+                <title>Test-driven Code Recommendation</title>
+                <meta name="description" content="Test-driven Code Recommendation" />
             </Head>
 
-            <Typography sx={{ margin: 2 }} variant="h5" component="div">Test-driven Code Search<Typography variant="h6" component="div">Specify your Code Module (Code Index: Snapshot of Maven Central)</Typography></Typography>
+            {recommendationType === "search" ?
+                <Typography sx={{ margin: 2 }} variant="h5" component="div">Test-driven Code Search<Typography variant="h6" component="div">Specify your Code Module (Code Index: Snapshot of Maven Central)</Typography></Typography>
 
+                : <Typography sx={{ margin: 2 }} variant="h5" component="div">Test-driven Code Generation (using LLMs)<Typography variant="h6" component="div">Specify your Code Module (LSL Template uses ChatGPT and also generates additional Tests)</Typography></Typography>
+
+            }
 
             <Stack sx={{ p: 4 }} spacing={3}>
                 {/* <Typography variant="h4" sx={{ mb: 2 }}>
@@ -301,7 +387,15 @@ export default function SequenceSheetEditorsPage() {
                     >
                         Generate LSL Script
                     </Button>
+
+                    <Stack direction="row" spacing={1} alignItems="center" sx={{ mt: 1, mb: 3 }}>
+                    <Typography variant="body2" color="text.secondary">
+                        Generate the LSL script and scroll down below to submit your script.
+                    </Typography>
+                </Stack>
                 </Box>
+
+
 
                 {/* Bottom multiline TextField for generated LSL script */}
                 {/* <TextField

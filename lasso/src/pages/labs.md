@@ -4,15 +4,22 @@
 
 A public demo LASSO instance (i.e., playground) is available. To try LASSO, head over to [TDSEHub](./hub), select an example LSL pipeline script and press the `Try Now!` button.
 
-### Generative AI (LLM) - Code and Test Generation
-
-For example, run your first code/test generation workflow with OpenAI models [here](lasso/submit?exampleId=OPENAI_GEN).
-
 ## Code Search Services
 
 The platform offers several code search services, including *interface-driven code search* as well as *test-driven code search*.
 
-Visit the [Search](search) page for details.
+**Learn More & Get Started:**
+
+*   [**Visit the Code Search Page**](search) for more details
+
+## Code and Test Generation with Generative AI
+
+The platform offers several code and test generation services, supported by the platform's sequence sheet notation and LASSO's query language.
+
+**Learn More & Get Started:**
+
+*   [**Visit the Code Generation Page**](generation) for more details
+*   [**TDSEHub**](lasso/submit?exampleId=OPENAI_GEN) - view example code/test generation LSL pipeline workflows with OpenAI models
 
 ## LSLFlow - A Visual Graph Editor for LSL Pipelines
 

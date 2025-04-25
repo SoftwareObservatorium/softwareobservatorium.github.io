@@ -1,4 +1,4 @@
-import { Accordion, AccordionSummary, AccordionDetails, Box, Button, CardActions, CardContent, CircularProgress, Link, Tab, Tabs, Typography, List, ListItem, ListItemIcon, ListItemText, Divider, FormControl, InputLabel, Select, MenuItem, SelectChangeEvent } from '@mui/material';
+import { Accordion, AccordionSummary, AccordionDetails, Box, Button, CardActions, CardContent, CircularProgress, Link, Tab, Tabs, Typography, List, ListItem, ListItemIcon, ListItemText, Divider, FormControl, InputLabel, Select, MenuItem, SelectChangeEvent, ListItemButton } from '@mui/material';
 import Grid from '@mui/material/Grid2';
 import React, { useEffect, useRef, useState } from 'react';
 
@@ -21,6 +21,8 @@ import SheetService from '@site/src/components/Sheet/SheetService';
 import AuthService from '@site/src/services/AuthService';
 import { Editor } from '@monaco-editor/react';
 import GraphComponent from '@site/src/components/Graph/graph';
+
+import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -337,13 +339,13 @@ DRAFT
 
                                       <Typography variant="body2" color="text.secondary">
                                         Learn more about <b>this code module</b>:                                       <Link
-                                        href={`/web/lasso/search?query=*:*&filter=id:${codeUnit.id}&ds=${codeUnit.dataSource}`}
-                                        target="_blank"
-                                        rel="noopener"
-                                        underline="hover"
-                                      >
-                                        Details
-                                      </Link>
+                                          href={`/web/lasso/search?query=*:*&filter=id:${codeUnit.id}&ds=${codeUnit.dataSource}`}
+                                          target="_blank"
+                                          rel="noopener"
+                                          underline="hover"
+                                        >
+                                          Details
+                                        </Link>
                                       </Typography>
 
                                     </React.Fragment>
@@ -417,8 +419,54 @@ DRAFT
                     <React.Fragment>
                       <Typography variant="h6" component="div">Analyze SRM Data in Jupyter Lite (WASM powered Juyper running in the browser!)</Typography>
                       <Typography component="div">(note: you can also download the Notebook and run it in your local Juypter environment)</Typography>
-                      <br />
-                      <p><Link target="_blank" href={`${LassoService.API_URL}notebooks/lab/index.html?fromURL=${LassoService.API_URL}publicapi/v1/lasso/analytics/srm/${scriptInfo.executionId}.ipynb`}>Open Notebook</Link></p>
+                      {/* <br />
+                      <p><Link target="_blank" href={`${LassoService.API_URL}notebooks/lab/index.html?fromURL=${LassoService.API_URL}publicapi/v1/lasso/analytics/srm/${scriptInfo.executionId}.ipynb`}>Open Notebook</Link></p> */}
+
+
+                      <List>
+
+                      <ListItem disablePadding>
+                          <ListItemButton
+                            component={Link} href={`${LassoService.API_URL}notebooks/lab/index.html?fromURL=${LassoService.API_URL}publicapi/v1/lasso/analytics/srm/value/${scriptInfo.executionId}.ipynb`}
+                            target="_blank"
+                            rel="noopener"
+                            underline="none"
+                          >
+                            <ListItemIcon>
+                              <ChevronRightIcon />
+                            </ListItemIcon>
+                            <ListItemText primary="Open SRM with output observations only" />
+                          </ListItemButton>
+                        </ListItem>
+                        <ListItem disablePadding>
+                          <ListItemButton
+                            component={Link} href={`${LassoService.API_URL}notebooks/lab/index.html?fromURL=${LassoService.API_URL}publicapi/v1/lasso/analytics/srm/${scriptInfo.executionId}.ipynb`}
+                            target="_blank"
+                            rel="noopener"
+                            underline="none"
+                          >
+                            <ListItemIcon>
+                              <ChevronRightIcon />
+                            </ListItemIcon>
+                            <ListItemText primary="Open SRM with all observations" />
+                          </ListItemButton>
+                        </ListItem>
+                        <ListItem disablePadding>
+                          <ListItemButton
+                            component={Link} href={`${LassoService.API_URL}notebooks/lab/index.html?fromURL=${LassoService.API_URL}publicapi/v1/lasso/analytics/raw/srm/${scriptInfo.executionId}.ipynb`}
+                            target="_blank"
+                            rel="noopener"
+                            underline="none"
+                          >
+                            <ListItemIcon>
+                              <ChevronRightIcon />
+                            </ListItemIcon>
+                            <ListItemText primary="Open Raw SRM (each cell in the SRM corresponds to a row)" />
+                          </ListItemButton>
+                        </ListItem>
+
+                      </List>
+
                     </React.Fragment>
                   </CustomTabPanel>
                   <CustomTabPanel value={value} index={4}>

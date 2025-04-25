@@ -301,7 +301,7 @@ DRAFT
                             {ab.codeUnits.length} Code Module(s)
                           </Typography>
 
-                          <br />
+                          {/* <br />
                           <Typography variant="body2" color="text.secondary">
                             <Link
                               href={`/web/lasso/search?query=*:*&filter=executionId:${executionId}&ds=lasso_quickstart`}
@@ -312,10 +312,10 @@ DRAFT
                               Click here
                             </Link> to view all <b>code modules</b>.
                           </Typography>
-                          <br />
+                          <br /> */}
 
 
-                          {/* <List dense={true}>
+                          <List dense={true}>
 
                             {ab.codeUnits.map((codeUnit) => (
                               <ListItem key={codeUnit.id}>
@@ -336,23 +336,23 @@ DRAFT
                                       <CodeBlock language="java">{codeUnit.content ? codeUnit.content : "n/a"}</CodeBlock>
 
                                       <Typography variant="body2" color="text.secondary">
-                                        Learn more about <b>this code module</b>:
-                                      </Typography>
-                                      <Link
-                                        href={`/web/lasso/search?query=*:*&filter=id:${codeUnit.id}&ds=lasso_quickstart`}
+                                        Learn more about <b>this code module</b>:                                       <Link
+                                        href={`/web/lasso/search?query=*:*&filter=id:${codeUnit.id}&ds=${codeUnit.dataSource}`}
                                         target="_blank"
                                         rel="noopener"
                                         underline="hover"
                                       >
                                         Details
                                       </Link>
+                                      </Typography>
+
                                     </React.Fragment>
                                   }
                                 ></ListItemText>
 
                               </ListItem>
                             ))}
-                          </List> */}
+                          </List>
 
                           <Typography>
                             {ab.specification.tests.length} Test(s)

@@ -71,7 +71,7 @@ const config: Config = {
           label: 'Documentation',
         },
         {to: '/hub', label: 'TDSEHub (Pipelines)', position: 'left'},
-        {to: '/lasso/search', label: 'Code Search', position: 'left'},
+        {to: '/search', label: 'Code Search', position: 'left'},
         {to: '/labs', label: 'Labs (Playground)', position: 'left'},
         {to: '/blog', label: 'Blog', position: 'left'},
         {to: '/research/intro', label: 'Research', position: 'left'},
@@ -119,7 +119,7 @@ const config: Config = {
             },
             {
               label: 'Code Search',
-              href: '/lasso/search',
+              href: '/search',
             },
             // {
             //   label: 'Discord',

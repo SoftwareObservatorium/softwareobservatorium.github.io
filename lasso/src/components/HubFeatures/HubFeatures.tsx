@@ -1,4 +1,26 @@
+// TDS examples
+
 // examples
+export class TDSExamples {
+    static MAP = {
+        BASE64: {
+            label: "Hello World (JDK Collections)",
+            lql: `Base64 {
+    encode(byte[])->byte[]
+    decode(java.lang.String)->byte[]
+}`,
+            sheets: [{
+              name: "testEncode",
+              signature: "()",
+              jsonl: `{"cells": {"A1": {}, "B1": "create", "C1": "Base64"}}
+{"cells": {"A2": {}, "B2": "encode", "C2": "A1", "D2": "\\"Hello World!\\".getBytes()"}}`,
+              invocations: []
+            }]
+        }
+    }
+}
+
+// Hub examples
 export class HubExamples {
     static MAP = {
         HELLO_WORLD_QUICKSTART: {

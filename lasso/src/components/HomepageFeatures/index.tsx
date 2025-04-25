@@ -18,7 +18,7 @@ const FeatureList: FeatureItem[] = [
     image: 'img/features/services.png',
     description: (
       <>
-        Utilize <a href="hub">LSL (LASSO Scripting Language)</a> for customizable code analysis services, including <a href="lasso/search">Code Search</a> and <a href="lasso/submit?exampleId=OPENAI_GEN">Generation (via LLMs)</a>, Test Generation, and Study Designs, enabling reproducible research in software engineering.
+        Utilize <a href="hub">LSL (LASSO Scripting Language)</a> for customizable code analysis services, including <a href="search">Code Search</a> and <a href="lasso/submit?exampleId=OPENAI_GEN">Generation (via LLMs)</a>, Test Generation, and Study Designs, enabling reproducible research in software engineering.
       </>
     ),
     position: true,

@@ -21,6 +21,7 @@ import LassoService from '@site/src/services/LassoService';
 import { CodeSnippetCard } from '@site/src/components/CodeSnippet/CodeSnippetCard';
 import Head from '@docusaurus/Head';
 import Layout from '@theme/Layout';
+import { TDSExamples } from '@site/src/components/HubFeatures/HubFeatures';
 
 const RESULTS_PER_PAGE = 10;
 
@@ -29,6 +30,7 @@ const CodeSearchPage: React.FC = () => {
     let filterString = ""
     let urlQueryString = ""
     let urlDataSourceString = ""
+    let exampleId = ""
     let filters: Record<string, string> = {};
     if (typeof window != "undefined") {
         const searchParams = new URLSearchParams(window.location.search);
@@ -36,28 +38,29 @@ const CodeSearchPage: React.FC = () => {
         filterString = searchParams.get("filter") ?? "";
         urlQueryString = searchParams.get("query") ?? "";
         urlDataSourceString = searchParams.get("ds") ?? "";
-    
+
+        exampleId = searchParams.get("example") ?? "";
+
         filterString.split(",").forEach(pair => {
             const [key, value] = pair.split(":");
             if (key && value) {
-            filters[key] = value;
+                filters[key] = value;
             }
         });
-    
+
         console.log(urlQueryString)
         console.log(urlDataSourceString)
         console.log(filters)
+        console.log(exampleId)
     }
 
     const [urlQuery, setUrlQuery] = useState(urlQueryString);
-    const [urlDataSource, setUrlDataSource] = useState(urlDataSourceString ? urlDataSourceString :  'mavenCentral2023');
+    const [urlDataSource, setUrlDataSource] = useState(urlDataSourceString ? urlDataSourceString : 'mavenCentral2023');
     const [urlFilters, setUrlFilters] = useState(filters);
 
+    const [currentExampleId, setCurrentExampleId] = useState(exampleId)
 
-    const [query, setQuery] = useState(urlQueryString ? urlQueryString : `Base64 {
-    encode(java.lang.String)->java.lang.String
-}
-`);
+    const [query, setQuery] = useState(urlQueryString ? urlQueryString : ``);
 
     const [results, setResults] = useState<CodeSnippet[]>([]);
     const [loading, setLoading] = useState(false);
@@ -147,19 +150,26 @@ const CodeSearchPage: React.FC = () => {
     };
 
     useEffect(() => {
-        if(urlQuery) {
+        if (urlQuery) {
             handleSearch()
+        }
+
+        if (currentExampleId) {
+            console.log("example " + currentExampleId)
+
+            const example = TDSExamples.MAP[currentExampleId]
+            setQuery(example.lql)
         }
     }, []);
 
     return (
         <Layout>
             <Head>
-                <title>Code Search</title>
-                <meta name="description" content="Code Search" />
+                <title>Interface-driven Code Search</title>
+                <meta name="description" content="Interface-driven Code Search" />
             </Head>
 
-            <Typography sx={{ margin: 2 }} variant="h5" component="div">Code Search<Typography variant="h6" component="div">Interface-driven Code Search (LQL Dialect)</Typography></Typography>
+            <Typography sx={{ margin: 2 }} variant="h5" component="div">Interface-driven Code Search<Typography variant="h6" component="div">Interface-driven Code Search (Code Index: Snapshot of Maven Central)</Typography></Typography>
 
             <Container maxWidth="md" sx={{ mt: 4 }}>
                 <Grid container spacing={2} alignItems="center" justifyContent="center">

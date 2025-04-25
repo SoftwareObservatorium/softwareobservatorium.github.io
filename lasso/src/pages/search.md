@@ -31,3 +31,7 @@ LASSO's Sequence Sheet Notation (SSN) allows for a unique form of code search ba
 (under construction)
 
 * [**Base64 encoding**](lasso/ssn?recommendation=search&example=BASE64)
+
+## Research
+
+More details about LASSO's code search services can be found in our recent article [Code search engines for the next generation](https://doi.org/10.1016/j.jss.2024.112065).

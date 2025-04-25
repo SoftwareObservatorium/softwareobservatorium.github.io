@@ -14,3 +14,7 @@ LASSO's Sequence Sheet Notation (SSN) allows for a unique form of code generatio
 (under construction)
 
 * [**Base64 encoding**](lasso/ssn?recommendation=gen&example=BASE64)
+
+## Research
+
+Research related to LASSO's code generation services can be found in our recent article [Promoting open science in test-driven software experiments](https://doi.org/10.1016/j.jss.2024.111971).

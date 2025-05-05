@@ -112,6 +112,31 @@ from tdse_srm.parquet as tbl1 where TYPE = 'value' and SYSTEMID != 'oracle' and 
       },
     ],
   },
+  {
+    group: 'Code Coverage (JaCoCo) - if measured by LSL Pipeline (Alternatives: BRANCH, LINE, INSTRUCTION)',
+    buttons: [
+      {
+        label: 'Cycl. Complexity (Ratio Covered)',
+        sql: `
+SELECT * FROM tdse_srm.parquet where sheetid = 'jacoco' and type = 'COMPLEXITY_COVEREDRATIO' order by value asc`.trim(),
+      },
+      {
+        label: 'Cycl. Complexity Total',
+        sql: `
+SELECT * FROM tdse_srm.parquet where sheetid = 'jacoco' and type = 'COMPLEXITY_TOTALCOUNT' order by value asc`.trim(),
+      },
+      {
+        label: 'Cycl. Complexity Covered',
+        sql: `
+SELECT * FROM tdse_srm.parquet where sheetid = 'jacoco' and type = 'COMPLEXITY_COVEREDCOUNT' order by value asc`.trim(),
+      },
+      {
+        label: 'Cycl. Complexity Missed',
+        sql: `
+SELECT * FROM tdse_srm.parquet where sheetid = 'jacoco' and type = 'COMPLEXITY_MISSEDCOUNT' order by value asc`.trim(),
+      },
+    ],
+  },
 ];
 
 export const SrmViewer: React.FC<SrmViewerProps> = ({ fileName }) => {

@@ -319,6 +319,86 @@ study(name: 'Ollama-Parallel') {
             srmpath: "/web/srm/OLLAMA_GEN.parquet",
             classifier: "example"
         },
+        OPENAI_GEN_SEARCH: {
+            label: "Generate (gpt4-o-mini) + Code Search",
+            description: "Explore how code code units from code generation and code search can be combined.",
+            lsl: `// LSL generated
+dataSource 'lasso_quickstart' // default dataSource
+dataSource 'mavenCentral2023' // Maven Central
+
+study(name: 'SearchGenChatGPT') {
+
+    // target profile
+    profile('java17Profile') {
+        scope('class') { type = 'class' }
+        environment('java17') {
+            image = 'maven:3.9-eclipse-temurin-17'
+        }
+    }
+
+    action(name: 'createStimulusMatrix') {
+        execute {
+            stimulusMatrix('myAb', """Base64 {
+    encode(byte[])->byte[]
+    decode(java.lang.String)->byte[]
+}""", [/*impls*/], [
+  test(name: 'testEncode()') {
+    row '', 'create', 'Base64'
+    row '', 'encode', 'A1', '"Hello World!".getBytes()'
+  }
+])
+        }
+    }
+
+    action(name: 'generateCodeGpt', type: 'GenerateCodeOpenAI') {
+        // pipeline specific
+        dependsOn 'createStimulusMatrix'
+        include '*'
+        profile('java17Profile')
+
+        // action configuration block
+        apiKey = "demo" // see https://docs.langchain4j.dev/integrations/language-models/open-ai/
+        model = "gpt-4o-mini"
+        samples = 1
+
+        // custom DSL command offered by the action (for each stimulus matrix, create one prompt to obtain impls)
+        prompt { stimulusMatrix ->
+            // can by for any prompts: FA, impls, models etc.
+            def prompt = [:] // create prompt model
+            prompt.promptContent = """implement a java class with the following interface specification, but do not inherit a java interface: \`\`\`\${stimulusMatrix.lql}\`\`\`. Only output the java class and nothing else."""
+            prompt.id = "lql_prompt"
+            return [prompt] // list of prompts is expected
+        }
+    }
+
+    /* select class candidates using interface-driven code search */
+    action(name: 'search', type: 'Search') {
+        dependsOn 'generateCodeGpt'
+        include '*'
+
+        dataSource = 'mavenCentral2023' // search candidates in maven central (query.dataSource in DSL block also possible)
+
+        query { stimulusMatrix ->
+            def query = [:] // create query model
+            query.queryContent = stimulusMatrix.lql
+            query.rows = 10
+
+            return [query] // list of queries is expected
+        }
+    }
+
+    action(name: 'execute', type: 'Arena') {
+        maxAdaptations = 1 // how many adaptations to try
+
+        dependsOn 'search'
+        include '*'
+        profile('java17Profile')
+    }
+}
+            `,
+            srmpath: "/web/srm/OPENAI_GEN_SEARCH.parquet",
+            classifier: "example"
+        },
         STACK_PARAMETERIZED: {
             label: "Parameterized Sequence Sheets",
             description: "Explore how sequence sheets can be parameterized (here using an example of Stack implementations)",

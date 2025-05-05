@@ -22,6 +22,7 @@ import { CodeSnippetCard } from '@site/src/components/CodeSnippet/CodeSnippetCar
 import Head from '@docusaurus/Head';
 import Layout from '@theme/Layout';
 import { TDSExamples } from '@site/src/components/HubFeatures/HubFeatures';
+import AuthService from '@site/src/services/AuthService';
 
 const RESULTS_PER_PAGE = 10;
 
@@ -81,7 +82,7 @@ const CodeSearchPage: React.FC = () => {
         return jsonArray;
     };
 
-    const handleSearch = () => {
+    const handleSearch = async () => {
         // do a textual search
         let textualSearch = new TextualSearch()
         textualSearch.lql = query
@@ -107,7 +108,27 @@ const CodeSearchPage: React.FC = () => {
 
         console.log(JSON.stringify(request))
 
-        LassoService.queryImplementationsForDataSource(lassoDataSource, request).then(
+        await AuthService.loginDefault().then(
+              (response) => {
+                // login successful
+                console.log("Successfully logged in")
+
+                
+              },
+              (error) => {
+                const resMessage =
+                  (error.response &&
+                    error.response.data &&
+                    error.response.data.message) ||
+                  error.message ||
+                  error.toString();
+        
+                // FIXME
+                console.log("Login attempt failed " + error)
+              }
+            )
+
+        await LassoService.queryImplementationsForDataSource(lassoDataSource, request).then(
             (response) => {
                 let sResponse: SearchQueryResponse = response.data
                 //console.log(JSON.stringify(sResponse))

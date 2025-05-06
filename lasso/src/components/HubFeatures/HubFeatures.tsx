@@ -13,7 +13,7 @@ export class TDSExamples {
               name: "testEncode",
               signature: "()",
               jsonl: `{"cells": {"A1": {}, "B1": "create", "C1": "Base64"}}
-{"cells": {"A2": {}, "B2": "encode", "C2": "A1", "D2": "\\"Hello World!\\".getBytes()"}}`,
+{"cells": {"A2": "\\"SGVsbG8gV29ybGQh\\".getBytes()", "B2": "encode", "C2": "A1", "D2": "\\"Hello World!\\".getBytes()"}}`,
               invocations: []
             }]
         },

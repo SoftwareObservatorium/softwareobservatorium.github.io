@@ -11,9 +11,8 @@ LASSO's Sequence Sheet Notation (SSN) allows for a unique form of code generatio
 
 ### Examples
 
-(under construction)
-
 * [**Base64 encoding**](lasso/ssn?recommendation=gen&example=BASE64)
+* [**Stack**](lasso/ssn?recommendation=gen&example=STACK)
 
 ## Research
 

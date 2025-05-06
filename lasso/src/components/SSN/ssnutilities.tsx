@@ -33,7 +33,7 @@ function sequenceSheetRowsJsonlToGroovyRows(jsonl: string, columns?: string[]): 
                 typeof value === "string"
                 && !/^-?\d+(\.\d+)?$/.test(value)
                 && !(value.startsWith("'") && value.endsWith("'")) // already Groovy quoted
-                && !(value.startsWith("\"") && value.endsWith("\"")) // JS string literal - leave as is (for "Hello World!")
+                //&& !(value.startsWith("\"") && value.endsWith("\"")) // JS string literal - leave as is (for "Hello World!")
                 && value !== ''
             ) {
                 return `'${value}'`;

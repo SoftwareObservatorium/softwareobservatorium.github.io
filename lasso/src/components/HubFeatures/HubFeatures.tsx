@@ -4,7 +4,7 @@
 export class TDSExamples {
     static MAP = {
         BASE64: {
-            label: "Hello World (JDK Collections)",
+            label: "Base64",
             lql: `Base64 {
     encode(byte[])->byte[]
     decode(java.lang.String)->byte[]
@@ -14,6 +14,25 @@ export class TDSExamples {
               signature: "()",
               jsonl: `{"cells": {"A1": {}, "B1": "create", "C1": "Base64"}}
 {"cells": {"A2": {}, "B2": "encode", "C2": "A1", "D2": "\\"Hello World!\\".getBytes()"}}`,
+              invocations: []
+            }]
+        },
+        STACK: {
+            label: "Stack",
+            lql: `Stack{
+    push(java.lang.Object)->java.lang.Object
+    pop()->java.lang.Object
+    peek()->java.lang.Object
+    size()->int
+}`,
+            sheets: [{
+              name: "testPush",
+              signature: "()",
+              jsonl: `{"cells":{"A1":{},"B1":"create","C1":"Stack"}}
+{"cells":{"A2":{},"B2":"push","C2":"A1","D2":"\\"Hello World!\\""}}
+{"cells":{"A3":"D2","B3":"peek","C3":"A1"}}
+{"cells":{"A4":"D2","B4":"pop","C4":"A1"}}
+{"cells":{"A5":0,"B5":"size","C5":"A1"}}`,
               invocations: []
             }]
         }

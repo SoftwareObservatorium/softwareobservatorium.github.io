@@ -11,9 +11,8 @@ LASSO's Query Language (LQL) enables a powerful and precise way to search for co
 
 ### Examples
 
-(under construction)
-
 * [**Base64 encoding**](lasso/search?example=BASE64)
+* [**Stack**](lasso/search?example=STACK)
 
 ---
 
@@ -28,9 +27,8 @@ LASSO's Sequence Sheet Notation (SSN) allows for a unique form of code search ba
 
 ### Examples
 
-(under construction)
-
 * [**Base64 encoding**](lasso/ssn?recommendation=search&example=BASE64)
+* [**Stack**](lasso/ssn?recommendation=search&example=STACK)
 
 ## Research
 

@@ -1,6 +1,5 @@
-// SequenceSheetEditorsPage.tsx
-import React, { useEffect, useRef, useState } from "react";
-import { Button, Stack, Typography, TextField, Box, Link } from "@mui/material";
+import React, { ChangeEvent, useEffect, useRef, useState } from "react";
+import { Button, Stack, Typography, TextField, Box, Link, FormControl, InputLabel, Select, MenuItem } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
 import { SequenceSheetEditor, SequenceSheetData, gridToJSONL, jsonlToRows } from '@site/src/components/SSN/SequenceSheetEditor';
 import { sequenceSheetsToGroovyDSL } from "@site/src/components/SSN/ssnutilities";
@@ -10,8 +9,10 @@ import Head from "@docusaurus/Head";
 import { LslRequest, LslResponse } from "@site/src/services/models";
 import AuthService from "@site/src/services/AuthService";
 import LassoService from "@site/src/services/LassoService";
-import { useHistory, useLocation } from "@docusaurus/router";
+import { useHistory } from "@docusaurus/router";
 import { TDSExamples } from "@site/src/components/HubFeatures/HubFeatures";
+import { TDGTemplates, TDS_PLACEHOLDER_DEFAULTS, TDSTemplates, TGS_PLACEHOLDER_DEFAULTS } from "@site/src/components/SSN/templates";
+//import LQLEditor from "@site/src/components/LQL/LQLEditor";
 
 const SEQ_SHEET_DEFAULT: SequenceSheetData = {
     name: "",
@@ -21,116 +22,19 @@ const SEQ_SHEET_DEFAULT: SequenceSheetData = {
     invocations: []
 };
 
-const TDS_LSL_TEMPLATE = `dataSource 'mavenCentral2023'
-study(name: 'TDSGenerated') {
-
-    profile('java17Profile') {
-    scope('class') { type = 'class' }
-    environment('java17') {
-        image = 'maven:3.9-eclipse-temurin-17' // docker image (JDK 17)
-    }
-    }
-      
-    action(name: 'createStimulusMatrix') {
-        execute {
-            stimulusMatrix('myAb', """{{INTERFACE}}""", [/*impls*/], {{TESTS}})
-        }
-    }
-
-    /* select class candidates using interface-driven code search */
-    action(name: 'select', type: 'Search') {
-        dependsOn 'createStimulusMatrix'
-        include '*'
-
-        query { stimulusMatrix ->
-            def query = [:] // create query model
-            query.queryContent = stimulusMatrix.lql
-            query.rows = {{ROWS}}
-
-            return [query] // list of queries is expected
-        }
-    }
-    /* filter candidates by two tests (test-driven code filtering) */
-    action(name: 'filter', type: 'Arena') { // filter by tests
-        features = ['cc'] // enable code coverage measurement (class scope)
-        maxAdaptations = 1 // how many adaptations to try
-
-        dependsOn 'select'
-        include '*'
-        profile('java17Profile')
-    }
-}`
-
-const GEN_LSL_TEMPLATE = `dataSource 'lasso_quickstart'
-study(name: 'GenChatGPT') {
-
-    // target profile
-    profile('java17Profile') {
-        scope('class') { type = 'class' }
-        environment('java17') {
-            image = 'maven:3.9-eclipse-temurin-17'
-        }
-    }
-
-    action(name: 'createStimulusMatrix') {
-        execute {
-            stimulusMatrix('myAb', """{{INTERFACE}}""", [/*impls*/], {{TESTS}})
-        }
-    }
-
-    action(name: 'generateCodeGpt', type: 'GenerateCodeOpenAI') {
-        // pipeline specific
-        dependsOn 'createStimulusMatrix'
-        include '*'
-        profile('java17Profile')
-
-        // action configuration block
-        apiKey = "demo" // see https://docs.langchain4j.dev/integrations/language-models/open-ai/
-        model = "gpt-4o-mini"
-        samples = 1
-
-        // custom DSL command offered by the action (for each stimulus matrix, create one prompt to obtain impls)
-        prompt { stimulusMatrix ->
-            // can by for any prompts: FA, impls, models etc.
-            def prompt = [:] // create prompt model
-            prompt.promptContent = """implement a java class with the following interface specification, but do not inherit a java interface: \`\`\`\${stimulusMatrix.lql}\`\`\`. Only output the java class and nothing else."""
-            prompt.id = "lql_prompt"
-            return [prompt] // list of prompts is expected
-        }
-    }
-
-    action(name: 'generateTestsGpt', type: 'GenerateTestsOpenAI') {
-        // pipeline specific
-        dependsOn 'generateCodeGpt'
-        include '*'
-        profile('java17Profile')
-
-        // action configuration block
-        apiKey = "demo" // see https://docs.langchain4j.dev/integrations/language-models/open-ai/
-        model = "gpt-4o-mini"
-        samples = 1
-
-        prompt { stimulusMatrix ->
-            def prompt = [:] // create prompt model
-            prompt.promptContent = """generate a junit test class to test the functionality of the following interface specification: \`\`\`\${stimulusMatrix.lql}\`\`\`. Assume that the specification is encapsulated in a class that uses the same naming as in the interface specification. Only output the JUnit test class and nothing else."""
-            prompt.id = "lql_prompt"
-            return [prompt] // list of prompts is expected
-        }
-    }
-
-    action(name: 'execute', type: 'Arena') {
-        maxAdaptations = 1 // how many adaptations to try
-
-        dependsOn 'generateTestsGpt'
-        include '*'
-        profile('java17Profile')
-    }
-}`
-
 function fillTemplate(template: string, values: Record<string, string | number>) {
     return template.replace(/{{\s*(\w+)\s*}}/g, (match, key) =>
         values.hasOwnProperty(key) ? String(values[key]) : match
     );
+}
+
+// Utility: Extract {{PLACEHOLDER}} names from a template string
+function extractPlaceholders(template: string): string[] {
+    const matches = [...template.matchAll(/{{\s*(\w+)\s*}}/g)];
+    // Remove duplicates and default provided e.g., INTERFACE, TESTS
+    const ignore = ["INTERFACE", "TESTS"]; // fill these programmatically
+    const names = Array.from(new Set(matches.map(m => m[1]))).filter(p => !ignore.includes(p));
+    return names;
 }
 
 export default function SequenceSheetEditorsPage() {
@@ -160,31 +64,32 @@ export default function SequenceSheetEditorsPage() {
     const editorRef = useRef<any>(null);
     const monacoRef = useRef<any>(null);
 
-    // Simulate LSL generation for demonstration purposes
+    // --- New state for template selection & user-provided placeholders
+    const TEMPLATE_KEYS = Object.keys(recommendationType === "search" ? TDSTemplates : TDGTemplates);
+    const [selectedTemplateKey, setSelectedTemplateKey] = useState<string>(TEMPLATE_KEYS[0]);
+    const [userPlaceholders, setUserPlaceholders] = useState<Record<string, string>>({});
+
+    // --- handleGenerateLSL to use selected template and user placeholders:
     const handleGenerateLSL = () => {
-        const jsonSheets = sheets.map(s => {
-            const jsonl = gridToJSONL(s.rows, s.columns);
-
-            return {
-                name: s.name,
-                signature: s.signature,
-                jsonl: jsonl
-            };
-        })
-
-        const groovyBlock = sequenceSheetsToGroovyDSL(jsonSheets)
-
-        const lslTemplate = recommendationType === "search" ? TDS_LSL_TEMPLATE : GEN_LSL_TEMPLATE
-
-        const result = fillTemplate(lslTemplate, {
+        const jsonSheets = sheets.map(s => ({
+            name: s.name,
+            signature: s.signature,
+            jsonl: gridToJSONL(s.rows, s.columns)
+        }));
+        const groovyBlock = sequenceSheetsToGroovyDSL(jsonSheets);
+        // Use the currently selected template
+        const lslTemplate = recommendationType === "search" ? TDSTemplates[selectedTemplateKey] : TDGTemplates[selectedTemplateKey];
+        const metaPlaceholders = recommendationType === "search" ? TDS_PLACEHOLDER_DEFAULTS[selectedTemplateKey] : TGS_PLACEHOLDER_DEFAULTS[selectedTemplateKey] || {};
+        const values: Record<string, string | number> = {
             INTERFACE: interfaceSpec,
             TESTS: groovyBlock,
-            ROWS: 10 // FIXME rows
-        });
-
+        };
+        for (const [k, val] of Object.entries(userPlaceholders)) {
+            values[k] = val || metaPlaceholders[k]?.default || ""; // fallback on meta default
+        }
+        const result = fillTemplate(lslTemplate, values);
         const lsl = `// LSL generated\n${result}`
-
-        editorRef.current.getModel().setValue(lsl)
+        editorRef.current.getModel().setValue(lsl);
         setGeneratedLSL(lsl);
     };
 
@@ -218,6 +123,16 @@ export default function SequenceSheetEditorsPage() {
         console.log(lslRequest);
 
         const responses = execute(lslRequest)
+    };
+
+    // --- Handlers for placeholder input values
+    const handlePlaceholderChange = (name: string, value: string) => {
+        setUserPlaceholders(prev => ({ ...prev, [name]: value }));
+    };
+
+    // --- Template selection handler
+    const handleTemplateChange = (e: any) => {
+        setSelectedTemplateKey(e.target.value as string);
     };
 
     const execute = async (lslRequest: LslRequest) => {
@@ -269,6 +184,19 @@ export default function SequenceSheetEditorsPage() {
 
         editorRef.current.getModel().setValue("");
     }
+
+    // --- Update on template change
+    useEffect(() => {
+        const template = recommendationType === "search" ? TDSTemplates[selectedTemplateKey] : TDGTemplates[selectedTemplateKey];
+        const placeholders = extractPlaceholders(template);
+        const meta = recommendationType === "search" ? TDS_PLACEHOLDER_DEFAULTS[selectedTemplateKey] : TGS_PLACEHOLDER_DEFAULTS[selectedTemplateKey] || {};
+        setUserPlaceholders(
+            placeholders.reduce((acc, p) => ({
+                ...acc,
+                [p]: (meta[p]?.default || "")
+            }), {})
+        );
+    }, [selectedTemplateKey]);
 
     useEffect(() => {
         if (currentExampleId) {
@@ -325,6 +253,8 @@ export default function SequenceSheetEditorsPage() {
                     fullWidth
                 />
 
+{/* <LQLEditor editorHandler={(mon => console.log(mon))} lqlHandler={(lql => setInterfaceSpec(lql))} defaultLqlCode={interfaceSpec} /> */}
+
                 <Stack direction="row" spacing={1} alignItems="center" sx={{ mt: 1, mb: 3 }}>
                     <Typography variant="body2" color="text.secondary">
                         Learn more about the <b>LQL Query Language</b>:
@@ -378,6 +308,59 @@ export default function SequenceSheetEditorsPage() {
                     />
                 ))}
 
+                {/* --- NEW: Template selection section --- */}
+                <Box>
+                    <Typography variant="h6" sx={{ mb: 1 }}>LSL Template Selection</Typography>
+
+                    <Stack direction="row" spacing={1} alignItems="center" sx={{ mt: 1, mb: 3 }}>
+                        <Typography variant="body2" color="text.secondary">
+                            Select your LSL Template. You may need to specify additional placeholders.
+                        </Typography>
+                    </Stack>
+                    <FormControl sx={{ minWidth: 320, maxWidth: 400, mb: 2 }}>
+                        <InputLabel id="lsl-template-label">LSL Template</InputLabel>
+                        <Select
+                            labelId="lsl-template-label"
+                            label="LSL Template"
+                            value={selectedTemplateKey}
+                            onChange={handleTemplateChange}
+                        >
+                            {TEMPLATE_KEYS.map(key =>
+                                <MenuItem key={key} value={key}>
+                                    {key}
+                                </MenuItem>
+                            )}
+                        </Select>
+                    </FormControl>
+
+                    {/* --- Render inputs for placeholders (excluding programmatic ones) --- */}
+                    {extractPlaceholders(recommendationType === "search" ? TDSTemplates[selectedTemplateKey] : TDGTemplates[selectedTemplateKey]).length > 0 &&
+                        <Stack spacing={1} sx={{ mb: 2 }}>
+                            <Typography variant="subtitle1" sx={{ mt: 2 }} fontWeight="bold">
+                                Additional Template Placeholders
+                            </Typography>
+
+
+                            {extractPlaceholders(recommendationType === "search" ? TDSTemplates[selectedTemplateKey] : TDGTemplates[selectedTemplateKey]).map(ph => {
+                                const meta = recommendationType === "search" ? TDS_PLACEHOLDER_DEFAULTS[selectedTemplateKey]?.[ph] : TGS_PLACEHOLDER_DEFAULTS[selectedTemplateKey]?.[ph];
+                                return (
+                                    <TextField
+                                        key={ph}
+                                        label={meta?.label || ph}
+                                        value={userPlaceholders[ph] || ""}
+                                        onChange={e => handlePlaceholderChange(ph, e.target.value)}
+                                        variant="outlined"
+                                        fullWidth
+                                        size="small"
+                                        sx={{ mt: 1 }}
+                                        placeholder={meta?.default || ""}
+                                        helperText={meta?.description || ""}
+                                    />
+                                );
+                            })}
+                        </Stack>}
+                </Box>
+
                 {/* Trigger LSL generation (optional, or tie to sheet/interfaceSpec change) */}
                 <Box>
                     <Button
@@ -389,28 +372,11 @@ export default function SequenceSheetEditorsPage() {
                     </Button>
 
                     <Stack direction="row" spacing={1} alignItems="center" sx={{ mt: 1, mb: 3 }}>
-                    <Typography variant="body2" color="text.secondary">
-                        Generate the LSL script and scroll down below to submit your script.
-                    </Typography>
-                </Stack>
+                        <Typography variant="body2" color="text.secondary">
+                            Generate the LSL script and scroll down below to submit your script.
+                        </Typography>
+                    </Stack>
                 </Box>
-
-
-
-                {/* Bottom multiline TextField for generated LSL script */}
-                {/* <TextField
-                value={generatedLSL}
-                label="Generated LSL Script"
-                multiline
-                minRows={7}
-                maxRows={20}
-                variant="outlined"
-                fullWidth
-                InputProps={{
-                    readOnly: true,
-                }}
-                sx={{ mt: 2 }}
-            /> */}
                 <Editor
                     height="500px"
                     defaultLanguage="java"

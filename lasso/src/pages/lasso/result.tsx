@@ -23,9 +23,9 @@ import { Editor } from '@monaco-editor/react';
 import GraphComponent from '@site/src/components/Graph/graph';
 
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
-import ClusteredSRMViewer from '@site/src/components/SrmViewer/ClusteredSRMViewer';
 import ClusteredSRMAccordionViewer from '@site/src/components/SrmViewer/ClusteredSRMAccordionViewer';
 import TestClusteredSRMAccordionViewer from '@site/src/components/SrmViewer/TestClusteredSRMAccordionViewer';
+import { CodeSnippetCard } from '@site/src/components/CodeSnippet/CodeSnippetCard';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -320,9 +320,10 @@ DRAFT
                           <br /> */}
 
 
-                          <List dense={true}>
+                          {/* <List dense={true}>
 
                             {ab.codeUnits.map((codeUnit) => (
+
                               <ListItem key={codeUnit.id}>
                                 <ListItemIcon>
                                   <Code />
@@ -357,7 +358,17 @@ DRAFT
 
                               </ListItem>
                             ))}
-                          </List>
+                          </List> */}
+
+                          <Grid container spacing={3} sx={{ mt: 1 }}>
+                            {ab.codeUnits.map((codeUnit) => (
+                              <Grid item xs={12} key={codeUnit.id}>
+                                <CodeSnippetCard snippet={codeUnit} />
+                              </Grid>
+                            ))}
+                          </Grid>
+
+                          <br/>
 
                           <Typography>
                             {ab.specification.tests.length} Test(s)

@@ -244,7 +244,7 @@ export default function SequenceSheetEditorsPage() {
                 <TextField
                     value={interfaceSpec}
                     onChange={e => setInterfaceSpec(e.target.value)}
-                    label="Interface Specification (LQL)"
+                    label="Interface Specification (LQL) - Focal Class/Methods"
                     placeholder="Enter interface specification here..."
                     multiline
                     minRows={3}

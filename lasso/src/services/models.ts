@@ -118,10 +118,10 @@ export type CodeSnippet = {
     dependencies: string[];
     measures: { [k: string]: number };
     metaData: {
-      meta_dependency_ss?: string[];
-      meta_name_s?: string[];
-      meta_url_s?: string[];
-      meta_description_s?: string[];
+        meta_dependency_ss?: string[];
+        meta_name_s?: string[];
+        meta_url_s?: string[];
+        meta_description_s?: string[];
     };
     inheritedMethods: any[];
     alternatives: any[];
@@ -133,4 +133,11 @@ export type CodeSnippet = {
     methodNames: string[];
     methodBytecodeNames: string[];
     lql: string;
-  };
+};
+
+export class CodeVersion {
+    id: string;
+    variantId: string;
+    adapterId: string;
+    oracle: boolean;
+}

@@ -23,6 +23,9 @@ import { Editor } from '@monaco-editor/react';
 import GraphComponent from '@site/src/components/Graph/graph';
 
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
+import ClusteredSRMViewer from '@site/src/components/SrmViewer/ClusteredSRMViewer';
+import ClusteredSRMAccordionViewer from '@site/src/components/SrmViewer/ClusteredSRMAccordionViewer';
+import TestClusteredSRMAccordionViewer from '@site/src/components/SrmViewer/TestClusteredSRMAccordionViewer';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -224,23 +227,23 @@ DRAFT
               <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
                 <Tabs value={value} onChange={handleChange} aria-label="basic tabs example">
                   <Tab label="Overview" {...a11yProps(0)} />
-                  <Tab label="LSL Pipeline" {...a11yProps(1)} />
-                  {/* {scriptInfo.status === "SUCCESSFUL" ?
-                    <>
-                      <Tab label="SRM Explorer" {...a11yProps(1)} />
-                      <Tab label="JupyterLab" {...a11yProps(2)} />
-                      <Tab label="Export Parquet" {...a11yProps(3)} />
-                    </>
-                    : null} */}
                   {scriptInfo.status === "SUCCESSFUL" ?
-                    <Tab label="SRM Explorer" {...a11yProps(2)} />
+                    <Tab label="Behavioral Clustering" {...a11yProps(1)} />
                     : null}
                   {scriptInfo.status === "SUCCESSFUL" ?
-                    <Tab label="JupyterLab" {...a11yProps(3)} />
+                    <Tab label="Test-based Clustering" {...a11yProps(2)} />
+                    : null}
+                  <Tab label="LSL Pipeline" {...a11yProps(3)} />
+                  {scriptInfo.status === "SUCCESSFUL" ?
+                    <Tab label="SRM Explorer" {...a11yProps(4)} />
                     : null}
                   {scriptInfo.status === "SUCCESSFUL" ?
-                    <Tab label="Export" {...a11yProps(4)} />
+                    <Tab label="JupyterLab" {...a11yProps(5)} />
                     : null}
+                  {scriptInfo.status === "SUCCESSFUL" ?
+                    <Tab label="Export" {...a11yProps(6)} />
+                    : null}
+
                 </Tabs>
               </Box>
               <CustomTabPanel value={value} index={0}>
@@ -395,6 +398,12 @@ DRAFT
 
               </CustomTabPanel>
               <CustomTabPanel value={value} index={1}>
+                <ClusteredSRMAccordionViewer fileName={LassoService.retrieveParquetUrl(scriptInfo.executionId)} executionId={scriptInfo.executionId} />
+              </CustomTabPanel>
+              <CustomTabPanel value={value} index={2}>
+                <TestClusteredSRMAccordionViewer fileName={LassoService.retrieveParquetUrl(scriptInfo.executionId)} executionId={scriptInfo.executionId} />
+              </CustomTabPanel>
+              <CustomTabPanel value={value} index={3}>
                 <CardContent>
                   <Typography sx={{ margin: 2 }} variant="h5" component="div">LSL Pipeline Viewer<Typography variant="h6" component="div">Explore the study and actions</Typography></Typography>
                   <Typography variant="h5" component="div">
@@ -412,10 +421,10 @@ DRAFT
               </CustomTabPanel>
               {scriptInfo.status === "SUCCESSFUL" ?
                 <>
-                  <CustomTabPanel value={value} index={2}>
+                  <CustomTabPanel value={value} index={4}>
                     <SrmViewer fileName={LassoService.retrieveParquetUrl(scriptInfo.executionId)} />
                   </CustomTabPanel>
-                  <CustomTabPanel value={value} index={3}>
+                  <CustomTabPanel value={value} index={5}>
                     <React.Fragment>
                       <Typography variant="h6" component="div">Analyze SRM Data in Jupyter Lite (WASM powered Juyper running in the browser!)</Typography>
                       <Typography component="div">(note: you can also download the Notebook and run it in your local Juypter environment)</Typography>
@@ -425,7 +434,7 @@ DRAFT
 
                       <List>
 
-                      <ListItem disablePadding>
+                        <ListItem disablePadding>
                           <ListItemButton
                             component={Link} href={`${LassoService.API_URL}notebooks/lab/index.html?fromURL=${LassoService.API_URL}publicapi/v1/lasso/analytics/srm/value/${scriptInfo.executionId}.ipynb`}
                             target="_blank"
@@ -469,12 +478,11 @@ DRAFT
 
                     </React.Fragment>
                   </CustomTabPanel>
-                  <CustomTabPanel value={value} index={4}>
+                  <CustomTabPanel value={value} index={6}>
                     <React.Fragment>
                       <Typography variant="h6" component="div">Export SRM data as Parquet File</Typography>
                       <p><Link target="_blank" href={LassoService.retrieveParquetUrl(scriptInfo.executionId)}>Download Link</Link></p>
                     </React.Fragment>
-
                   </CustomTabPanel>
                 </>
 

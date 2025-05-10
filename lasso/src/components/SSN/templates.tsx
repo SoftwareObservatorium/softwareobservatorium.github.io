@@ -123,29 +123,11 @@ study(name: 'GenChatGPT') {
         }
     }
 
-    action(name: 'generateTestsGpt', type: 'GenerateTestsOpenAI') {
-        // pipeline specific
-        dependsOn 'generateCodeGpt'
-        include '*'
-        profile('java17Profile')
-
-        // action configuration block
-        apiKey = "demo" // see https://docs.langchain4j.dev/integrations/language-models/open-ai/
-        model = "gpt-4o-mini"
-        samples = {{SAMPLES}}
-
-        prompt { stimulusMatrix ->
-            def prompt = [:] // create prompt model
-            prompt.promptContent = """generate a junit test class to test the functionality of the following interface specification: \`\`\`\${stimulusMatrix.lql}\`\`\`. Assume that the specification is encapsulated in a class that uses the same naming as in the interface specification. Only output the JUnit test class and nothing else."""
-            prompt.id = "lql_prompt"
-            return [prompt] // list of prompts is expected
-        }
-    }
-
     action(name: 'execute', type: 'Arena') {
         maxAdaptations = 1 // how many adaptations to try
+        features = ['cc']
 
-        dependsOn 'generateTestsGpt'
+        dependsOn 'generateCodeGpt'
         include '*'
         profile('java17Profile')
     }
@@ -210,6 +192,7 @@ study(name: 'GenChatGPT') {
 
     action(name: 'execute', type: 'Arena') {
         maxAdaptations = 1 // how many adaptations to try
+        features = ['cc']
 
         dependsOn 'generateTestsGpt'
         include '*'
@@ -258,6 +241,7 @@ study(name: 'GenOllama') {
 
     action(name: 'execute', type: 'Arena') {
         maxAdaptations = 1 // how many adaptations to try
+        features = ['cc']
 
         dependsOn 'generateCodeLlama'
         include '*'
@@ -325,12 +309,148 @@ study(name: 'GenOllama') {
 
     action(name: 'execute', type: 'Arena') {
         maxAdaptations = 1 // how many adaptations to try
+        features = ['cc']
 
         dependsOn 'generateTestsLlama'
         include '*'
         profile('java17Profile')
     }
 }`
+
+const ChatGPTEvoSuite = `dataSource 'lasso_quickstart'
+study(name: 'EvoSuiteGenChatGPT') {
+
+    // target profile
+    profile('java17Profile') {
+        scope('class') { type = 'class' }
+        environment('java17') {
+            image = 'maven:3.9-eclipse-temurin-17'
+        }
+    }
+
+    // profile for EvoSuite
+    profile('java11Profile') {
+        scope('class') { type = 'class' }
+        environment('java17') {
+            image = 'maven:3.6.3-openjdk-11' // EvoSuite won't run in > JDK 11
+        }
+    }
+
+    action(name: 'createStimulusMatrix') {
+        execute {
+            stimulusMatrix('myAb', """{{INTERFACE}}""", [/*impls*/], {{TESTS}})
+        }
+    }
+
+    action(name: 'generateCodeGpt', type: 'GenerateCodeOpenAI') {
+        // pipeline specific
+        dependsOn 'createStimulusMatrix'
+        include '*'
+        profile('java17Profile')
+        javaVersion = "11" // because of EvoSuite ..
+
+        // action configuration block
+        apiKey = "demo" // see https://docs.langchain4j.dev/integrations/language-models/open-ai/
+        model = "gpt-4o-mini"
+        samples = {{CODE_SAMPLES}}
+
+        // custom DSL command offered by the action (for each stimulus matrix, create one prompt to obtain impls)
+        prompt { stimulusMatrix ->
+            // can by for any prompts: FA, impls, models etc.
+            def prompt = [:] // create prompt model
+            prompt.promptContent = """implement a java class with the following interface specification, but do not inherit a java interface: \`\`\`\${stimulusMatrix.lql}\`\`\`. Only output the java class and nothing else."""
+            prompt.id = "lql_prompt"
+            return [prompt] // list of prompts is expected
+        }
+    }
+
+    // add tests: SBST
+    action(name: 'evoSuite', type: 'EvoSuite') {
+        searchBudget = 60 // we need this as upper bound for timeouts
+        stoppingCondition = "MaxTime"
+
+        dependsOn 'generateCodeGpt'
+        include '*'
+        profile('java11Profile')
+    }
+
+    action(name: 'execute', type: 'Arena') {
+        maxAdaptations = 1 // how many adaptations to try
+
+        dependsOn 'evoSuite'
+        include '*'
+        profile('java17Profile')
+    }
+}
+`
+
+const OllamaEvoSuite = `dataSource 'lasso_quickstart'
+def ollamaServers = ["http://bagdana.informatik.uni-mannheim.de:11434"]
+study(name: 'EvoSuiteGenOllama') {
+
+    // target profile
+    profile('java17Profile') {
+        scope('class') { type = 'class' }
+        environment('java17') {
+            image = 'maven:3.9-eclipse-temurin-17'
+        }
+    }
+
+    // profile for EvoSuite
+    profile('java11Profile') {
+        scope('class') { type = 'class' }
+        environment('java17') {
+            image = 'maven:3.6.3-openjdk-11' // EvoSuite won't run in > JDK 11
+        }
+    }
+
+    action(name: 'createStimulusMatrix') {
+        execute {
+            stimulusMatrix('myAb', """{{INTERFACE}}""", [/*impls*/], {{TESTS}})
+        }
+    }
+
+    action(name: 'generateCodeLlama', type: 'GenerateCodeOllama') {
+        // pipeline specific
+        dependsOn 'createStimulusMatrix'
+        include '*'
+        profile('java17Profile')
+        javaVersion = "11" // because of EvoSuite ..
+
+        // action configuration block
+        servers = ollamaServers
+        model = {{CODE_MODEL}}
+        samples = {{CODE_SAMPLES}}
+
+        // custom DSL command offered by the action (for each stimulus matrix, create one prompt to obtain impls)
+        prompt { stimulusMatrix ->
+            // can by for any prompts: FA, impls, models etc.
+            def prompt = [:] // create prompt model
+            prompt.promptContent = """implement a java class with the following interface specification, but do not inherit a java interface: \`\`\`\${stimulusMatrix.lql}\`\`\`. Only output the java class and nothing else."""
+            prompt.id = "lql_prompt"
+            return [prompt] // list of prompts is expected
+        }
+    }
+
+    // add tests: SBST
+    action(name: 'evoSuite', type: 'EvoSuite') {
+        searchBudget = 60 // we need this as upper bound for timeouts
+        stoppingCondition = "MaxTime"
+
+        dependsOn 'generateCodeLlama'
+        include '*'
+        profile('java11Profile')
+    }
+
+    action(name: 'execute', type: 'Arena') {
+        maxAdaptations = 1 // how many adaptations to try
+
+        dependsOn 'evoSuite'
+        include '*'
+        profile('java17Profile')
+    }
+}
+`
 
 export const TDS_PLACEHOLDER_DEFAULTS: {
     [templateKey: string]: {
@@ -428,7 +548,26 @@ export const TGS_PLACEHOLDER_DEFAULTS: {
             default: "1",
             description: "The number of test (classes) to generate"
         },
-    }
+    },
+    OllamaEvoSuite: {
+        CODE_MODEL: {
+            label: "Code Model (LLM)",
+            default: "\"gemma3:27b\"",
+            description: "The Ollama model to use for generation"
+        },
+        CODE_SAMPLES: {
+            label: "Number of Code Modules",
+            default: "1",
+            description: "The number of code modules to generate"
+        }
+    },
+    ChatGPTEvoSuite: {
+        CODE_SAMPLES: {
+            label: "Number of Code Modules",
+            default: "1",
+            description: "The number of code modules to generate"
+        },
+    },
 };
 
 export const TDSTemplates = {
@@ -439,6 +578,8 @@ export const TDSTemplates = {
 export const TDGTemplates = {
     ChatGPT,
     ChatGPTGenerateTests,
+    ChatGPTEvoSuite,
     Ollama,
-    OllamaGenerateTests
+    OllamaGenerateTests,
+    OllamaEvoSuite
 };

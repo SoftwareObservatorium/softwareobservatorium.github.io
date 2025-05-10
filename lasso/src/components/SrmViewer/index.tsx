@@ -149,20 +149,6 @@ export const SrmViewer: React.FC<SrmViewerProps> = ({ fileName }) => {
   const dbRef = useRef<duckdb.AsyncDuckDB>();
   const isParquetLoaded = useRef(false);
 
-  // DataGrid expects a stable and unique id. Try to infer a good key.
-  // const inferId = (row: any, i: number) => {
-  //   if ("ROWID" in row) return row.ROWID;
-  //   if ("id" in row) return row.id;
-  //   // Or compose from key fields, fallback to index
-  //   return (
-  //     // Try to combine keys that are present
-  //     ["SHEETID", "X", "Y", "SYSTEMID", "STATEMENT"]
-  //       .map((k) => row[k])
-  //       .filter(Boolean)
-  //       .join("_") || i
-  //   );
-  // };
-
   // --- DuckDB init & Parquet registration; only runs ONCE per session
   const ensureDuckDbReady = useCallback(async () => {
     if (dbRef.current && isParquetLoaded.current) return dbRef.current;

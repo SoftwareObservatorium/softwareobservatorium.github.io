@@ -306,60 +306,6 @@ DRAFT
                             {ab.codeUnits.length} Code Module(s)
                           </Typography>
 
-                          {/* <br />
-                          <Typography variant="body2" color="text.secondary">
-                            <Link
-                              href={`/web/lasso/search?query=*:*&filter=executionId:${executionId}&ds=lasso_quickstart`}
-                              target="_blank"
-                              rel="noopener"
-                              underline="hover"
-                            >
-                              Click here
-                            </Link> to view all <b>code modules</b>.
-                          </Typography>
-                          <br /> */}
-
-
-                          {/* <List dense={true}>
-
-                            {ab.codeUnits.map((codeUnit) => (
-
-                              <ListItem key={codeUnit.id}>
-                                <ListItemIcon>
-                                  <Code />
-                                </ListItemIcon>
-                                <ListItemText
-                                  primary={codeUnit.packagename + "." + codeUnit.name}
-                                  secondary={
-                                    <React.Fragment>
-                                      <Typography
-                                        component="span"
-                                        variant="body2"
-                                        sx={{ color: 'text.primary', display: 'inline' }}
-                                      >
-                                        <small>{codeUnit.id}</small>
-                                      </Typography>
-                                      <CodeBlock language="java">{codeUnit.content ? codeUnit.content : "n/a"}</CodeBlock>
-
-                                      <Typography variant="body2" color="text.secondary">
-                                        Learn more about <b>this code module</b>:                                       <Link
-                                          href={`/web/lasso/search?query=*:*&filter=id:${codeUnit.id}&ds=${codeUnit.dataSource}`}
-                                          target="_blank"
-                                          rel="noopener"
-                                          underline="hover"
-                                        >
-                                          Details
-                                        </Link>
-                                      </Typography>
-
-                                    </React.Fragment>
-                                  }
-                                ></ListItemText>
-
-                              </ListItem>
-                            ))}
-                          </List> */}
-
                           <Grid container spacing={3} sx={{ mt: 1 }}>
                             {ab.codeUnits.map((codeUnit) => (
                               <Grid item xs={12} key={codeUnit.id}>

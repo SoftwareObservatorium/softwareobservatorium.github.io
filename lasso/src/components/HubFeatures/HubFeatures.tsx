@@ -10,11 +10,37 @@ export class TDSExamples {
     decode(java.lang.String)->byte[]
 }`,
             sheets: [{
-              name: "testEncode",
-              signature: "()",
-              jsonl: `{"cells": {"A1": {}, "B1": "create", "C1": "Base64"}}
+                name: "testEncode",
+                signature: "()",
+                body: `{"cells": {"A1": {}, "B1": "create", "C1": "Base64"}}
 {"cells": {"A2": "\\"SGVsbG8gV29ybGQh\\".getBytes()", "B2": "encode", "C2": "A1", "D2": "\\"Hello World!\\".getBytes()"}}`,
-              invocations: []
+                invocations: []
+            }]
+        },
+        BASE64_PARAMETERIZED: {
+            label: "Base64 (Parameterized Sheets)",
+            lql: `Base64 {
+    encode(byte[])->byte[]
+    decode(java.lang.String)->byte[]
+}`,
+            sheets: [{
+                name: "testEncode",
+                signature: "(p1=byte[])",
+                body: `{"cells":{"A1":{},"B1":"create","C1":"Base64"}}\n{"cells":{"A2":"\\"SGVsbG8gV29ybGQh\\".getBytes()","B2":"encode","C2":"A1","D2":"?p1"}}`,
+                invocations: [
+                    {
+                        id: 0,
+                        sequenceSheetName: "testEncode",
+                        signature: "",
+                        params: ["\"Hello World!\".getBytes()"]
+                    },
+
+                    {
+                        id: 1,
+                        sequenceSheetName: "testEncode",
+                        signature: "",
+                        params: ["\"Hello World\".getBytes()"]
+                    }]
             }]
         },
         STACK: {
@@ -26,14 +52,14 @@ export class TDSExamples {
     size()->int
 }`,
             sheets: [{
-              name: "testPush",
-              signature: "()",
-              jsonl: `{"cells":{"A1":{},"B1":"create","C1":"Stack"}}
+                name: "testPush",
+                signature: "()",
+                body: `{"cells":{"A1":{},"B1":"create","C1":"Stack"}}
 {"cells":{"A2":{},"B2":"push","C2":"A1","D2":"\\"Hello World!\\""}}
 {"cells":{"A3":"D2","B3":"peek","C3":"A1"}}
 {"cells":{"A4":"D2","B4":"pop","C4":"A1"}}
 {"cells":{"A5":0,"B5":"size","C5":"A1"}}`,
-              invocations: []
+                invocations: []
             }]
         }
     }
@@ -443,12 +469,12 @@ study(name: 'Stack') {
                       row '', 'push', 'A1', '"Hi"'
                       row '', 'size', 'A1'
                   },
-                  test(name: 'testPushParameterized(p1=java.lang.String)', p1: "Hello World!") {
+                  test(name: 'testPushParameterized(p1=java.lang.String)', p1: '"Hello World!"') {
                       row '', 'create', 'Stack'
                       row '', 'push', 'A1', '?p1'
                       row '', 'size', 'A1'
                   },
-                  test(name: 'testPushParameterized(p1=java.lang.String)', p1: "Bla blub!") // e.g., parameterized
+                  test(name: 'testPushParameterized(p1=java.lang.String)', p1: '"Bla blub!"') // e.g., parameterized
                 ]
         )
     }
@@ -502,12 +528,12 @@ study(name: 'Stack') {
                       row '',  'push',   'A1',     '"Hi"'
                       row '',  'size',   'A1'
                   },
-                  test(name: 'testPushParameterized(p1=java.lang.String)', p1: "Hello World!") {
+                  test(name: 'testPushParameterized(p1=java.lang.String)', p1: '"Hello World!"') {
                       row '',  'create', 'Stack'
                       row '',  'push',   'A1',     '?p1'
                       row '',  'size',   'A1'
                   },
-                  test(name: 'testPushParameterized(p1=java.lang.String)', p1: "Bla blub!") // e.g., parameterized
+                  test(name: 'testPushParameterized(p1=java.lang.String)', p1: '"Bla blub!"') // e.g., parameterized
                 ]
         )
     }

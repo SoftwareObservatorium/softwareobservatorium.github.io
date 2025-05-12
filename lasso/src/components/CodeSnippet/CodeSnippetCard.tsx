@@ -127,10 +127,15 @@ export const CodeSnippetCard: React.FC<CodeSnippetProps> = ({ snippet }) => (
             <Typography variant="subtitle2" sx={{ mb: 0.5 }}>
                 Source:
             </Typography>
+            <Box sx={{maxHeight: 350,
+                overflow: "auto"
+            }}>
             <CodeBlock
                 language="java">
                 {snippet.content}
             </CodeBlock>
+            </Box>
+
             {/* <Box
                 component="pre"
                 sx={{

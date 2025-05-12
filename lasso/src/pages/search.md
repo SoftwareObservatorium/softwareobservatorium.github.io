@@ -28,6 +28,7 @@ LASSO's Sequence Sheet Notation (SSN) allows for a unique form of code search ba
 ### Examples
 
 * [**Base64 encoding**](lasso/ssn?recommendation=search&example=BASE64)
+* [**Base64 encoding (Parameterized Tests)**](lasso/ssn?recommendation=search&example=BASE64_PARAMETERIZED)
 * [**Stack**](lasso/ssn?recommendation=search&example=STACK)
 
 ## Research

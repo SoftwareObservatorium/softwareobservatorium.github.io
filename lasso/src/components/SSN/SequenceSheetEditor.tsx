@@ -11,7 +11,6 @@ import DownloadIcon from "@mui/icons-material/Download";
 import RemoveCircleOutlineIcon from "@mui/icons-material/RemoveCircleOutline";
 import AddIcon from "@mui/icons-material/Add";
 import RemoveIcon from "@mui/icons-material/Remove";
-import { sequenceSheetsToGroovyDSL } from "./ssnutilities";
 
 const BASE_COLS = ["A", "B", "C", "D"];
 const OPERATION_NAMES = ["create", "push", "pop", "size"];
@@ -118,6 +117,17 @@ export interface SequenceSheetData {
   rows: any[];
   invocations: Invocation[];
 }
+export interface SequenceSheetDataModel {
+  name: string;
+  signature: string;
+  body: string;
+  invocations: Invocation[];
+}
+export interface SequenceSheetSetModel {
+  sheets: SequenceSheetDataModel[];
+  interfaceSpecification: string;
+}
+
 interface SequenceSheetEditorProps {
   value: SequenceSheetData;
   onChange: (next: SequenceSheetData) => void;
@@ -181,7 +191,7 @@ export const SequenceSheetEditor: React.FC<SequenceSheetEditorProps> = ({
     handleChangeField("rows", nextRows);
     return newRow;
   };
-  const handleExport = () => {
+  const handleExportJSONL = () => {
     const jsonl = gridToJSONL(value.rows, value.columns);
 
     // const sheet1 = {
@@ -201,9 +211,12 @@ export const SequenceSheetEditor: React.FC<SequenceSheetEditorProps> = ({
     a.click();
     a.remove();
     setSnackMsg("Exported as file.");
-};
-  const handleImport = () => {
-    const result = jsonlToRows(importText);
+  };
+
+  const handleImport = (text: string) => {
+    const model: SequenceSheetDataModel = JSON.parse(text);
+
+    const result = jsonlToRows(model.body);
     if ("error" in result) {
       setSnackMsg(result.error);
     } else {
@@ -211,7 +224,16 @@ export const SequenceSheetEditor: React.FC<SequenceSheetEditorProps> = ({
         ...row,
         id: idx,
       }));
-      onChange({ ...value, columns: result.cols, rows: importedRows });
+
+      const newValue: SequenceSheetData = {
+        name: model.name,
+        signature: model.signature,
+        columns: result.cols,
+        rows: importedRows,
+        invocations: model.invocations
+      };
+
+      onChange(newValue);
       setSnackMsg("Imported!");
     }
   };
@@ -248,12 +270,12 @@ export const SequenceSheetEditor: React.FC<SequenceSheetEditorProps> = ({
   };
 
   // --- Invocations Logic ---
-  const handleAddInvocation = () => {
+  const handleAddInvocation = (sequenceSheetName: string) => {
     handleChangeField("invocations", [
       ...value.invocations,
       {
         id: nextInvId,
-        sequenceSheetName: "",
+        sequenceSheetName: sequenceSheetName,
         signature: "",
         params: [""],
       },
@@ -287,9 +309,9 @@ export const SequenceSheetEditor: React.FC<SequenceSheetEditorProps> = ({
       value.invocations.map((inv) =>
         inv.id === invId
           ? {
-              ...inv,
-              params: inv.params.map((v, idx) => (idx === paramIdx ? paramVal : v)),
-            }
+            ...inv,
+            params: inv.params.map((v, idx) => (idx === paramIdx ? paramVal : v)),
+          }
           : inv
       )
     );
@@ -414,7 +436,7 @@ export const SequenceSheetEditor: React.FC<SequenceSheetEditorProps> = ({
         <Button
           variant="outlined"
           startIcon={<DownloadIcon />}
-          onClick={handleExport}
+          onClick={handleExportJSONL}
         >
           Export JSONL
         </Button>
@@ -482,7 +504,7 @@ export const SequenceSheetEditor: React.FC<SequenceSheetEditorProps> = ({
       <Typography variant="h6" sx={{ mt: 6 }}>Invocations of Sequence Sheets</Typography>
       <Button
         startIcon={<AddIcon />}
-        onClick={handleAddInvocation}
+        onClick={(e) => handleAddInvocation(value.name)}
         sx={{ mt: 1, mb: 2 }}
         variant="contained"
       >
@@ -501,6 +523,7 @@ export const SequenceSheetEditor: React.FC<SequenceSheetEditorProps> = ({
                 <TextField
                   label="Sequence Sheet Name"
                   value={inv.sequenceSheetName}
+                  disabled={true}
                   onChange={e =>
                     handleInvocationFieldChange(inv.id, "sequenceSheetName", e.target.value)
                   }

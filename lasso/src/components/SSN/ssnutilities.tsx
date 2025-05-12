@@ -1,3 +1,5 @@
+import { Invocation } from "./SequenceSheetEditor";
+
 type SequenceSheetJsonLRow = {
     cells: Record<string, any>
 };
@@ -60,18 +62,57 @@ function sequenceSheetRowsJsonlToGroovyRows(jsonl: string, columns?: string[]): 
     });
 }
 
+export function extractParamNames(input: string): string[] {
+  // Remove leading/trailing whitespace and any surrounding parentheses
+  const cleaned = input.trim().replace(/^\(|\)$/g, '');
+
+  // If the string is empty after cleaning, return []
+  if (!cleaned) return [];
+
+  // Split on commas to get individual key-value pairs
+  const pairs = cleaned.split(',');
+
+  // Extract key names
+  const keys = pairs.map(pair => {
+    const match = /^\s*([^=]+)\s*=/.exec(pair);
+    return match ? match[1].trim() : null;
+  }).filter((key): key is string => !!key); // Filters out any nulls
+
+  return keys;
+}
+
 /**
  * Converts a list of sequence sheets in JSONL to Groovy DSL.
  * @param sheets Array of { name: string, jsonl: string, columns: string[] }
  * @returns String of Groovy DSL representing all sheets.
  */
 export function sequenceSheetsToGroovyDSL(
-    sheets: { name: string; signature: string; jsonl: string; columns?: string[] }[]
+    sheets: { name: string; signature: string; jsonl: string; invocations: Invocation[]; columns?: string[] }[]
 ): string {
-    const sheetBlocks = sheets.map(sheet => {
+    const sheetBlocks = sheets.flatMap(sheet => {
+        const paramNames = extractParamNames(sheet.signature);
         const title = sheet.name.replace(/'/g, "\\'") + sheet.signature; // Escape any single quote in name
         const bodyRows = sequenceSheetRowsJsonlToGroovyRows(sheet.jsonl, sheet.columns);
-        return `  test(name: '${title}') {\n    ${bodyRows.join('\n    ')}\n  }`;
+
+        console.log(paramNames)
+
+        if(sheet.invocations.length > 0) {
+            // array
+            return sheet.invocations.map((inv, index) => {
+                const parameters = inv.params.map((p, pIndex) => `${paramNames[pIndex]}:'${p}'`).join(', ');
+
+                if(index == 0) {
+                    // declare entire sheet
+                    return `  test(name: '${title}', ${parameters}) {\n    ${bodyRows.join('\n    ')}\n  }`;
+                } else {
+                    // just invocation
+                    return `  test(name: '${title}', ${parameters})`;
+                }
+            });
+        } else {
+            // array
+            return [`  test(name: '${title}') {\n    ${bodyRows.join('\n    ')}\n  }`];
+        }
     });
     // Output as a Groovy list
     return '[\n' + sheetBlocks.join(',\n') + '\n]';

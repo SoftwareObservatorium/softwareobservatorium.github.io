@@ -1,7 +1,7 @@
 import React, { ChangeEvent, useEffect, useRef, useState } from "react";
-import { Button, Stack, Typography, TextField, Box, Link, FormControl, InputLabel, Select, MenuItem } from "@mui/material";
+import { Button, Stack, Typography, TextField, Box, Link, FormControl, InputLabel, Select, MenuItem, Snackbar, Alert } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
-import { SequenceSheetEditor, SequenceSheetData, gridToJSONL, jsonlToRows } from '@site/src/components/SSN/SequenceSheetEditor';
+import { SequenceSheetEditor, SequenceSheetData, gridToJSONL, jsonlToRows, SequenceSheetDataModel, SequenceSheetSetModel } from '@site/src/components/SSN/SequenceSheetEditor';
 import { sequenceSheetsToGroovyDSL } from "@site/src/components/SSN/ssnutilities";
 import { Editor } from "@monaco-editor/react";
 import Layout from "@theme/Layout";
@@ -64,6 +64,9 @@ export default function SequenceSheetEditorsPage() {
     const editorRef = useRef<any>(null);
     const monacoRef = useRef<any>(null);
 
+    const fileInputRef = React.useRef<HTMLInputElement>(null);
+    const [snackMsg, setSnackMsg] = useState<string | null>(null);
+
     // --- New state for template selection & user-provided placeholders
     const TEMPLATE_KEYS = Object.keys(recommendationType === "search" ? TDSTemplates : TDGTemplates);
     const [selectedTemplateKey, setSelectedTemplateKey] = useState<string>(TEMPLATE_KEYS[0]);
@@ -74,7 +77,8 @@ export default function SequenceSheetEditorsPage() {
         const jsonSheets = sheets.map(s => ({
             name: s.name,
             signature: s.signature,
-            jsonl: gridToJSONL(s.rows, s.columns)
+            jsonl: gridToJSONL(s.rows, s.columns),
+            invocations: s.invocations
         }));
         const groovyBlock = sequenceSheetsToGroovyDSL(jsonSheets);
         // Use the currently selected template
@@ -92,6 +96,78 @@ export default function SequenceSheetEditorsPage() {
         editorRef.current.getModel().setValue(lsl);
         setGeneratedLSL(lsl);
     };
+
+    const handleImportButtonClick = () => {
+        fileInputRef.current?.click();
+    };
+
+    const handleImportFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const files = event.target.files;
+        if (files && files[0]) {
+            // For example, reading a text file
+            const file = files[0];
+            const reader = new FileReader();
+            reader.onload = e => {
+                const content = e.target?.result;
+                // Do something with the file content (string or ArrayBuffer)
+
+                if (typeof content === 'string') {
+                    // Now content is guaranteed to be a string
+                    console.log('File content as string:', content);
+                    handleImport(content);
+                } else {
+                    console.error('File could not be read as text.');
+                }
+
+            };
+            reader.readAsText(file);
+        }
+    };
+
+    const handleExport = () => {
+        //
+        const jsonSheets: SequenceSheetDataModel[] = sheets.map(s => ({
+            name: s.name,
+            signature: s.signature,
+            body: gridToJSONL(s.rows, s.columns),
+            invocations: s.invocations
+        }));
+
+        const sheetSet: SequenceSheetSetModel = {
+            interfaceSpecification: interfaceSpec,
+            sheets: jsonSheets
+        };
+
+        const blob = new Blob([JSON.stringify(sheetSet)], { type: "text/plain" });
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(blob);
+        a.download = "sequence-sheets.json";
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        setSnackMsg("Exported as file.");
+    }
+
+    const handleImport = (text: string) => {
+        const sheets: SequenceSheetSetModel = JSON.parse(text);
+
+        setSheets(sheets.sheets.map(s => {
+            const sheetResult: any = jsonlToRows(s.body);
+
+            console.log(sheetResult)
+
+            const sheet: SequenceSheetData = {
+                name: s.name,
+                signature: s.signature,
+                rows: sheetResult.rows,
+                columns: sheetResult.cols,
+                invocations: s.invocations
+            }
+            return sheet
+        }));
+
+        setInterfaceSpec(sheets.interfaceSpecification);
+    }
 
     const handleAddSheet = () => {
         setSheets((s) => [
@@ -204,7 +280,7 @@ export default function SequenceSheetEditorsPage() {
 
             const example = TDSExamples.MAP[currentExampleId]
             setSheets(example.sheets.map(s => {
-                const sheetResult: any = jsonlToRows(s.jsonl);
+                const sheetResult: any = jsonlToRows(s.body);
 
                 console.log(sheetResult)
 
@@ -253,7 +329,7 @@ export default function SequenceSheetEditorsPage() {
                     fullWidth
                 />
 
-{/* <LQLEditor editorHandler={(mon => console.log(mon))} lqlHandler={(lql => setInterfaceSpec(lql))} defaultLqlCode={interfaceSpec} /> */}
+                {/* <LQLEditor editorHandler={(mon => console.log(mon))} lqlHandler={(lql => setInterfaceSpec(lql))} defaultLqlCode={interfaceSpec} /> */}
 
                 <Stack direction="row" spacing={1} alignItems="center" sx={{ mt: 1, mb: 3 }}>
                     <Typography variant="body2" color="text.secondary">
@@ -276,6 +352,20 @@ export default function SequenceSheetEditorsPage() {
                     sx={{ mb: 2, width: 210 }}
                 >
                     Add Sequence Sheet
+                </Button>
+                <input
+                    type="file"
+                    ref={fileInputRef}
+                    style={{ display: 'none' }}
+                    onChange={handleImportFileChange}
+                />
+                <Button
+                    startIcon={<AddIcon />}
+                    variant="contained"
+                    onClick={handleImportButtonClick}
+                    sx={{ mb: 2, width: 210 }}
+                >
+                    Import Sequence Sheets
                 </Button>
 
                 <Stack direction="row" spacing={1} alignItems="center" sx={{ mt: 1, mb: 3 }}>
@@ -307,6 +397,19 @@ export default function SequenceSheetEditorsPage() {
                         onRemove={() => handleRemoveSheet(idx)}
                     />
                 ))}
+
+                <Box>
+                    <Button
+                        startIcon={<AddIcon />}
+                        variant="contained"
+                        color="primary"
+                        sx={{ mt: 2, minWidth: 150 }}
+
+                        onClick={handleExport}
+                    >
+                        Export Sheets
+                    </Button>
+                </Box>
 
                 {/* --- NEW: Template selection section --- */}
                 <Box>
@@ -395,6 +498,16 @@ export default function SequenceSheetEditorsPage() {
                         Submit LSL Script
                     </Button>
                 </Box>
-            </Stack></Layout>
+            </Stack>
+
+            <Snackbar
+                open={snackMsg != null}
+                autoHideDuration={2200}
+                onClose={() => setSnackMsg(null)}
+            >
+                <Alert severity="info">{snackMsg}</Alert>
+            </Snackbar>
+
+        </Layout>
     );
 }

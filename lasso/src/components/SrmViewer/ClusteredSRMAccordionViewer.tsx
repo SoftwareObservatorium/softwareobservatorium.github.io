@@ -22,6 +22,8 @@ import {
     Paper,
     Link,
     Grid,
+    FormControlLabel,
+    Checkbox,
 } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import * as duckdb from '@duckdb/duckdb-wasm';
@@ -77,6 +79,8 @@ export const ClusteredSRMAccordionViewer: React.FC<ClusteredSRMAccordionViewerPr
     const [clusters, setClusters] = useState<any[]>([]);
     const [loadingState, setLoadingState] = useState<LoadingState>('unloaded');
     const [error, setError] = useState<string | null>(null);
+
+    const [limitOracles, setLimitOracles] = useState(false);
 
     const [queryResponse, setQueryResponse] = useState<SearchSrmQueryResponse>()
 
@@ -187,7 +191,7 @@ export const ClusteredSRMAccordionViewer: React.FC<ClusteredSRMAccordionViewerPr
 
     // Clustering query (with abstraction filter)
     const runClusteringQuery = useCallback(
-        async (abstractionFilter: string) => {
+        async (abstractionFilter: string, limitOracles: boolean) => {
             setLoadingState('loading');
             setError(null);
             try {
@@ -195,9 +199,37 @@ export const ClusteredSRMAccordionViewer: React.FC<ClusteredSRMAccordionViewerPr
                 if (!db) throw new Error('DuckDB/Parquet not loaded');
                 const conn = await db.connect();
 
-                const baseSQL = `
-SELECT count(*) AS cluster_size, list(SYSTEMID) AS cluster_implementations, * EXCLUDE (SYSTEMID) FROM (PIVOT (SELECT CONCAT(SHEETID,'@',X, ',', Y) as statement, CONCAT(SYSTEMID,'_',VARIANTID,'_',ADAPTERID) as SYSTEMID, value from tdse_srm.parquet where type = 'value' ${abstractionFilter ? `AND ABSTRACTIONID = '${abstractionFilter.replace("'", "''")}'` : ''}) ON STATEMENT USING first(VALUE) ORDER BY SYSTEMID) as mypiv group by all order by cluster_size DESC
-      `
+                let baseSQL = ''
+                if(limitOracles) {
+                    baseSQL = `WITH excluded_statements AS (
+  SELECT SHEETID, X, Y
+  FROM tdse_srm.parquet
+  WHERE type = 'value'
+    AND value = '$*'
+    ${abstractionFilter ? `AND ABSTRACTIONID = '${abstractionFilter.replace("'", "''")}'` : ''}
+)
+SELECT count(*) AS cluster_size, list(SYSTEMID) AS cluster_implementations, * EXCLUDE (SYSTEMID) FROM (
+    PIVOT (
+        SELECT
+            CONCAT(SHEETID,'@',X, ',', Y) as statement,
+            CONCAT(SYSTEMID,'_',VARIANTID,'_',ADAPTERID) as SYSTEMID,
+            value from tdse_srm.parquet t
+            WHERE type = 'value' AND NOT EXISTS (
+                SELECT 1 FROM excluded_statements e
+                WHERE t.SHEETID = e.SHEETID AND t.X = e.X AND t.Y = e.Y)
+            ${abstractionFilter ? `AND ABSTRACTIONID = '${abstractionFilter.replace("'", "''")}'` : ''})
+    ON STATEMENT USING first(VALUE) ORDER BY SYSTEMID) as mypiv group by all order by cluster_size DESC`
+                } else {
+                    baseSQL = `
+SELECT count(*) AS cluster_size, list(SYSTEMID) AS cluster_implementations, * EXCLUDE (SYSTEMID) FROM (
+    PIVOT (
+        SELECT
+            CONCAT(SHEETID,'@',X, ',', Y) as statement,
+            CONCAT(SYSTEMID,'_',VARIANTID,'_',ADAPTERID) as SYSTEMID,
+            value from tdse_srm.parquet t
+            WHERE type = 'value' and SYSTEMID != 'oracle' ${abstractionFilter ? `AND ABSTRACTIONID = '${abstractionFilter.replace("'", "''")}'` : ''})
+    ON STATEMENT USING first(VALUE) ORDER BY SYSTEMID) as mypiv group by all order by cluster_size DESC`
+                }
 
                 const arrowResult = await conn.query(baseSQL);
                 const array = arrowResult.toArray().map((row: any, idx: number) => {
@@ -238,10 +270,10 @@ SELECT count(*) AS cluster_size, list(SYSTEMID) AS cluster_implementations, * EX
         if (!selectedAbstraction) {
             setSelectedAbstraction(abstractions[0]);
         } else {
-            runClusteringQuery(selectedAbstraction);
+            runClusteringQuery(selectedAbstraction, limitOracles);
         }
         // eslint-disable-next-line
-    }, [abstractions, selectedAbstraction]);
+    }, [abstractions, selectedAbstraction, limitOracles]);
 
     // Handler for abstraction change
     const handleAbstractionChange = (event: any) => {
@@ -260,11 +292,11 @@ SELECT count(*) AS cluster_size, list(SYSTEMID) AS cluster_implementations, * EX
             <CardContent>
                 {abstractions.length > 0 && (
                     <FormControl sx={{ minWidth: 220 }}>
-                        <InputLabel id="abstraction-select-label">Abstraction ID</InputLabel>
+                        <InputLabel id="abstraction-select-label">Abstraction</InputLabel>
                         <Select
                             labelId="abstraction-select-label"
                             value={selectedAbstraction}
-                            label="Abstraction ID"
+                            label="Abstraction"
                             onChange={handleAbstractionChange}
                             disabled={loadingState === 'loading'}
                         >
@@ -274,6 +306,16 @@ SELECT count(*) AS cluster_size, list(SYSTEMID) AS cluster_implementations, * EX
                                 </MenuItem>
                             ))}
                         </Select>
+                        <FormControlLabel
+                            control={
+                                <Checkbox
+                                    checked={limitOracles}
+                                    onChange={(e) => setLimitOracles(e.target.checked)}
+                                    color="primary"
+                                />
+                            }
+                            label="Include Specified Oracle Values"
+                        />
                     </FormControl>
                 )}
             </CardContent>

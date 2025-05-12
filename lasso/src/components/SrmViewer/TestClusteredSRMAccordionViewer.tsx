@@ -22,6 +22,8 @@ import {
     Paper,
     Link,
     Grid,
+    FormControlLabel,
+    Checkbox,
 } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import * as duckdb from '@duckdb/duckdb-wasm';
@@ -77,6 +79,8 @@ export const TestClusteredSRMAccordionViewer: React.FC<TestClusteredSRMAccordion
     const [clusters, setClusters] = useState<any[]>([]);
     const [loadingState, setLoadingState] = useState<LoadingState>('unloaded');
     const [error, setError] = useState<string | null>(null);
+
+    const [limitOracles, setLimitOracles] = useState(false);
 
     const [queryResponse, setQueryResponse] = useState<SearchSrmQueryResponse>()
 
@@ -187,7 +191,7 @@ export const TestClusteredSRMAccordionViewer: React.FC<TestClusteredSRMAccordion
 
     // Clustering query (with abstraction filter)
     const runClusteringQuery = useCallback(
-        async (abstractionFilter: string) => {
+        async (abstractionFilter: string, limitOracles: boolean) => {
             setLoadingState('loading');
             setError(null);
             try {
@@ -195,7 +199,9 @@ export const TestClusteredSRMAccordionViewer: React.FC<TestClusteredSRMAccordion
                 if (!db) throw new Error('DuckDB/Parquet not loaded');
                 const conn = await db.connect();
 
-                const baseSQL = `
+                                let baseSQL = ''
+                if(limitOracles) {
+                    baseSQL = `
 SELECT 
     SHEETID,
     X,
@@ -205,6 +211,18 @@ SELECT
     (select list(CONCAT(SYSTEMID, '_', VARIANTID, '_', ADAPTERID) ORDER BY SYSTEMID, VARIANTID, ADAPTERID) from tdse_srm.parquet where VALUE = test_based_oracle and TYPE = 'value' and ABSTRACTIONID = tbl1.ABSTRACTIONID and SHEETID = tbl1.SHEETID and X = tbl1.X and Y=tbl1.Y) as cluster_implementations
 from tdse_srm.parquet as tbl1 where TYPE = 'value' ${abstractionFilter ? `AND ABSTRACTIONID = '${abstractionFilter.replace("'", "''")}'` : ''} and SYSTEMID != 'oracle' GROUP BY ABSTRACTIONID, SHEETID, X, Y ORDER BY SHEETID, X, Y
 `
+                } else {
+                    baseSQL = `
+SELECT 
+    SHEETID,
+    X,
+    Y,
+    MODE(VALUE) as test_based_oracle,
+    list(DISTINCT VALUE) as unique_values,
+    (select list(CONCAT(SYSTEMID, '_', VARIANTID, '_', ADAPTERID) ORDER BY SYSTEMID, VARIANTID, ADAPTERID) from tdse_srm.parquet where VALUE = test_based_oracle and TYPE = 'value' and SYSTEMID != 'oracle' and ABSTRACTIONID = tbl1.ABSTRACTIONID and SHEETID = tbl1.SHEETID and X = tbl1.X and Y=tbl1.Y) as cluster_implementations
+from tdse_srm.parquet as tbl1 where TYPE = 'value' ${abstractionFilter ? `AND ABSTRACTIONID = '${abstractionFilter.replace("'", "''")}'` : ''} and SYSTEMID != 'oracle' GROUP BY ABSTRACTIONID, SHEETID, X, Y ORDER BY SHEETID, X, Y
+`
+                }
 
                 const arrowResult = await conn.query(baseSQL);
                 const array = arrowResult.toArray().map((row: any, idx: number) => {
@@ -245,10 +263,10 @@ from tdse_srm.parquet as tbl1 where TYPE = 'value' ${abstractionFilter ? `AND AB
         if (!selectedAbstraction) {
             setSelectedAbstraction(abstractions[0]);
         } else {
-            runClusteringQuery(selectedAbstraction);
+            runClusteringQuery(selectedAbstraction, limitOracles);
         }
         // eslint-disable-next-line
-    }, [abstractions, selectedAbstraction]);
+    }, [abstractions, selectedAbstraction, limitOracles]);
 
     // Handler for abstraction change
     const handleAbstractionChange = (event: any) => {
@@ -267,11 +285,11 @@ from tdse_srm.parquet as tbl1 where TYPE = 'value' ${abstractionFilter ? `AND AB
             <CardContent>
                 {abstractions.length > 0 && (
                     <FormControl sx={{ minWidth: 220 }}>
-                        <InputLabel id="abstraction-select-label">Abstraction ID</InputLabel>
+                        <InputLabel id="abstraction-select-label">Abstraction</InputLabel>
                         <Select
                             labelId="abstraction-select-label"
                             value={selectedAbstraction}
-                            label="Abstraction ID"
+                            label="Abstraction"
                             onChange={handleAbstractionChange}
                             disabled={loadingState === 'loading'}
                         >
@@ -281,6 +299,16 @@ from tdse_srm.parquet as tbl1 where TYPE = 'value' ${abstractionFilter ? `AND AB
                                 </MenuItem>
                             ))}
                         </Select>
+                        <FormControlLabel
+                            control={
+                                <Checkbox
+                                    checked={limitOracles}
+                                    onChange={(e) => setLimitOracles(e.target.checked)}
+                                    color="primary"
+                                />
+                            }
+                            label="Include Specified Oracle Values"
+                        />
                     </FormControl>
                 )}
             </CardContent>
@@ -316,16 +344,6 @@ from tdse_srm.parquet as tbl1 where TYPE = 'value' ${abstractionFilter ? `AND AB
                                 <Typography sx={{ flex: 1 }} variant="h6" component="div">
                                     {cluster.SHEETID + '@' + cluster.Y}, Size: {implementations.length}
                                 </Typography>
-                                <Box>
-                                    {unique_values.slice(0, 5).map((val) => (
-                                        <Chip key={val.id} label={val.id} size="small" sx={{ m: 0.5 }} />
-                                    ))}
-                                    {unique_values.length > 5 && (
-                                        <Typography variant="caption">
-                                            +{unique_values.length - 5} more
-                                        </Typography>
-                                    )}
-                                </Box>
                             </AccordionSummary>
                             <AccordionDetails>
                                 {/* Optionally display other metadata */}
@@ -335,7 +353,7 @@ from tdse_srm.parquet as tbl1 where TYPE = 'value' ${abstractionFilter ? `AND AB
                                         <Table size="small">
                                             <TableHead>
                                                 <TableRow>
-                                                    <TableCell>Test@Inovcation (Actuation Sheet)</TableCell>
+                                                    <TableCell>Test@Invocation (Actuation Sheet)</TableCell>
                                                     <TableCell>Output</TableCell>
                                                 </TableRow>
                                             </TableHead>
@@ -348,6 +366,12 @@ from tdse_srm.parquet as tbl1 where TYPE = 'value' ${abstractionFilter ? `AND AB
                                                 ))}
                                             </TableBody>
                                         </Table>
+                                        <Typography variant="subtitle2">All Unique Values</Typography>
+                                        <Box>
+                                            {unique_values.map((val) => (
+                                                <Chip key={val.id} label={val.id} size="small" sx={{ m: 0.5 }} />
+                                            ))}
+                                        </Box>
                                     </Box>
                                 )}
                                 <Typography variant="subtitle2" gutterBottom>

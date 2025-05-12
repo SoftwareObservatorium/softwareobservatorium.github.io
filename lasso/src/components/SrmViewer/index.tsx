@@ -65,53 +65,53 @@ const ALL_BUTTONS: { group: string; buttons: { label: string; sql: string }[] }[
       },
     ],
   },
-  {
-    group: 'Cluster-based Voting',
-    buttons: [
-      {
-        label: 'Cluster-based Voting',
-        sql: `SELECT count(*) AS cluster_size, list(SYSTEMID) AS cluster_implementations, * EXCLUDE (SYSTEMID) FROM (PIVOT (SELECT CONCAT(SHEETID,'@',X, ',', Y) as statement, CONCAT(SYSTEMID,'_',VARIANTID,'_',ADAPTERID) as SYSTEMID, value from tdse_srm.parquet where type = 'value') ON STATEMENT USING first(VALUE) ORDER BY SYSTEMID) as mypiv group by all order by cluster_size DESC`,
-      },
-      {
-        label: 'Cluster-based Voting (Ignore Create)',
-        sql: `SELECT count(*) AS cluster_size, list(SYSTEMID) AS cluster_implementations, * EXCLUDE (SYSTEMID) FROM (PIVOT (SELECT CONCAT(SHEETID,'@',X, ',', Y) as statement, CONCAT(SYSTEMID,'_',VARIANTID,'_',ADAPTERID) as SYSTEMID, value from tdse_srm.parquet where type = 'value' and y > 0) ON STATEMENT USING first(VALUE) ORDER BY SYSTEMID) as mypiv group by all order by cluster_size DESC`,
-      },
-      // Test-based voting commented out in original; can uncomment if needed!
-    ],
-  },
-  {
-    group: 'Test-based Oracle',
-    buttons: [
-      {
-        label: 'Test-based Oracle',
-        sql: `
-SELECT 
-    ABSTRACTIONID,
-    SHEETID,
-    X,
-    Y,
-    MODE(VALUE) as test_based_oracle,
-    list(DISTINCT VALUE) as distinct_values,
-    (select list(CONCAT(SYSTEMID, '_', VARIANTID, '_', ADAPTERID) ORDER BY SYSTEMID, VARIANTID, ADAPTERID) from tdse_srm.parquet where VALUE = test_based_oracle and TYPE = 'value' and ABSTRACTIONID = tbl1.ABSTRACTIONID and SHEETID = tbl1.SHEETID and X = tbl1.X and Y=tbl1.Y) as matches
-from tdse_srm.parquet as tbl1 where TYPE = 'value' and SYSTEMID != 'oracle' GROUP BY ABSTRACTIONID, SHEETID, X, Y ORDER BY SHEETID, X, Y
-        `.trim(),
-      },
-      {
-        label: 'Test-based Oracle (Ignore Create)',
-        sql: `
-SELECT 
-    ABSTRACTIONID,
-    SHEETID,
-    X,
-    Y,
-    MODE(VALUE) as test_based_oracle,
-    list(DISTINCT VALUE) as distinct_values,
-    (select list(CONCAT(SYSTEMID, '_', VARIANTID, '_', ADAPTERID) ORDER BY SYSTEMID, VARIANTID, ADAPTERID) from tdse_srm.parquet where VALUE = test_based_oracle and TYPE = 'value' and ABSTRACTIONID = tbl1.ABSTRACTIONID and SHEETID = tbl1.SHEETID and X = tbl1.X and Y=tbl1.Y) as matches
-from tdse_srm.parquet as tbl1 where TYPE = 'value' and SYSTEMID != 'oracle' and Y > 0 GROUP BY ABSTRACTIONID, SHEETID, X, Y ORDER BY SHEETID, X, Y
-        `.trim(),
-      },
-    ],
-  },
+//   {
+//     group: 'Cluster-based Voting',
+//     buttons: [
+//       {
+//         label: 'Cluster-based Voting',
+//         sql: `SELECT count(*) AS cluster_size, list(SYSTEMID) AS cluster_implementations, * EXCLUDE (SYSTEMID) FROM (PIVOT (SELECT CONCAT(SHEETID,'@',X, ',', Y) as statement, CONCAT(SYSTEMID,'_',VARIANTID,'_',ADAPTERID) as SYSTEMID, value from tdse_srm.parquet where type = 'value') ON STATEMENT USING first(VALUE) ORDER BY SYSTEMID) as mypiv group by all order by cluster_size DESC`,
+//       },
+//       {
+//         label: 'Cluster-based Voting (Ignore Create)',
+//         sql: `SELECT count(*) AS cluster_size, list(SYSTEMID) AS cluster_implementations, * EXCLUDE (SYSTEMID) FROM (PIVOT (SELECT CONCAT(SHEETID,'@',X, ',', Y) as statement, CONCAT(SYSTEMID,'_',VARIANTID,'_',ADAPTERID) as SYSTEMID, value from tdse_srm.parquet where type = 'value' and y > 0) ON STATEMENT USING first(VALUE) ORDER BY SYSTEMID) as mypiv group by all order by cluster_size DESC`,
+//       },
+//       // Test-based voting commented out in original; can uncomment if needed!
+//     ],
+//   },
+//   {
+//     group: 'Test-based Oracle',
+//     buttons: [
+//       {
+//         label: 'Test-based Oracle',
+//         sql: `
+// SELECT 
+//     ABSTRACTIONID,
+//     SHEETID,
+//     X,
+//     Y,
+//     MODE(VALUE) as test_based_oracle,
+//     list(DISTINCT VALUE) as distinct_values,
+//     (select list(CONCAT(SYSTEMID, '_', VARIANTID, '_', ADAPTERID) ORDER BY SYSTEMID, VARIANTID, ADAPTERID) from tdse_srm.parquet where VALUE = test_based_oracle and TYPE = 'value' and ABSTRACTIONID = tbl1.ABSTRACTIONID and SHEETID = tbl1.SHEETID and X = tbl1.X and Y=tbl1.Y) as matches
+// from tdse_srm.parquet as tbl1 where TYPE = 'value' and SYSTEMID != 'oracle' GROUP BY ABSTRACTIONID, SHEETID, X, Y ORDER BY SHEETID, X, Y
+//         `.trim(),
+//       },
+//       {
+//         label: 'Test-based Oracle (Ignore Create)',
+//         sql: `
+// SELECT 
+//     ABSTRACTIONID,
+//     SHEETID,
+//     X,
+//     Y,
+//     MODE(VALUE) as test_based_oracle,
+//     list(DISTINCT VALUE) as distinct_values,
+//     (select list(CONCAT(SYSTEMID, '_', VARIANTID, '_', ADAPTERID) ORDER BY SYSTEMID, VARIANTID, ADAPTERID) from tdse_srm.parquet where VALUE = test_based_oracle and TYPE = 'value' and ABSTRACTIONID = tbl1.ABSTRACTIONID and SHEETID = tbl1.SHEETID and X = tbl1.X and Y=tbl1.Y) as matches
+// from tdse_srm.parquet as tbl1 where TYPE = 'value' and SYSTEMID != 'oracle' and Y > 0 GROUP BY ABSTRACTIONID, SHEETID, X, Y ORDER BY SHEETID, X, Y
+//         `.trim(),
+//       },
+//     ],
+//   },
   {
     group: 'Code Coverage (JaCoCo) - if measured by LSL Pipeline (Alternatives: BRANCH, LINE, INSTRUCTION)',
     buttons: [

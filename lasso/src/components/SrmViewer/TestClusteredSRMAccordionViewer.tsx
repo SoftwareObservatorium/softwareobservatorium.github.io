@@ -10,27 +10,25 @@ import {
     InputLabel,
     Select,
     MenuItem,
-    Accordion,
-    AccordionSummary,
-    AccordionDetails,
     Chip,
-    Table,
-    TableHead,
-    TableRow,
-    TableCell,
-    TableBody,
-    Paper,
     Link,
-    Grid,
     FormControlLabel,
     Checkbox,
+    Dialog,
+    DialogTitle,
+    IconButton,
+    DialogContent,
 } from '@mui/material';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import * as duckdb from '@duckdb/duckdb-wasm';
 import axios from 'axios';
 import { CodeVersion, SearchSrmQueryRequest, SearchSrmQueryResponse } from '@site/src/services/models';
 import LassoService from '@site/src/services/LassoService';
-import { CodeSnippetCard } from '../CodeSnippet/CodeSnippetCard';
+import { DataGrid, GridColDef, GridRowClassNameParams } from '@mui/x-data-grid';
+import { renderHumanOutputValue } from './ClusteredSRMAccordionViewer';
+import ActuationSheet from '../Sheet/ActuationSheet';
+import SheetService from '../Sheet/SheetService';
+import CloseIcon from '@mui/icons-material/Close';
+import CodeBlock from '@theme/CodeBlock';
 
 export interface TestClusteredSRMAccordionViewerProps {
     fileName: string;
@@ -79,6 +77,9 @@ export const TestClusteredSRMAccordionViewer: React.FC<TestClusteredSRMAccordion
     const [clusters, setClusters] = useState<any[]>([]);
     const [loadingState, setLoadingState] = useState<LoadingState>('unloaded');
     const [error, setError] = useState<string | null>(null);
+
+    // ----------- DIALOG STATES -----------
+    const [openTestCase, setOpenTestCase] = useState<any | null>(null);
 
     const [limitOracles, setLimitOracles] = useState(false);
 
@@ -164,6 +165,20 @@ export const TestClusteredSRMAccordionViewer: React.FC<TestClusteredSRMAccordion
         }
     }, [fileName]);
 
+    const getTestCase = (testCaseName: string) => {
+        if (!queryResponse) {
+            return null;
+        }
+
+        console.log("test case name " + testCaseName);
+
+        const tests = queryResponse.abstractions.find((ab) => ab.name === selectedAbstraction)
+            .specification.tests;
+        const test = tests.find((t) => t.signature === testCaseName)
+
+        return test;
+    }
+
     // Load abstractions for dropdown
     const loadAbstractions = useCallback(async () => {
         setLoadingState('loading');
@@ -199,8 +214,8 @@ export const TestClusteredSRMAccordionViewer: React.FC<TestClusteredSRMAccordion
                 if (!db) throw new Error('DuckDB/Parquet not loaded');
                 const conn = await db.connect();
 
-                                let baseSQL = ''
-                if(limitOracles) {
+                let baseSQL = ''
+                if (limitOracles) {
                     baseSQL = `
 SELECT 
     SHEETID,
@@ -277,11 +292,9 @@ from tdse_srm.parquet as tbl1 where TYPE = 'value' ${abstractionFilter ? `AND AB
         <Box sx={{ p: 2 }}>
             <Typography variant="h5" mb={2}>
                 Test Clustering (by Abstraction)
-                <Typography variant="h6" component="div">Clusters tests based on most frequent outputs (based on output SRM)</Typography>
+                <Typography variant="h6" component="div">Identifies most frequent outputs that may serve as oracle values (based on output SRM)</Typography>
             </Typography>
-            <Typography>
-                Note: Only presents the test cluster with the highest amount of implementations (i.e., may serve as an oracle using test-based voting)
-            </Typography>
+
             <CardContent>
                 {abstractions.length > 0 && (
                     <FormControl sx={{ minWidth: 220 }}>
@@ -327,98 +340,183 @@ from tdse_srm.parquet as tbl1 where TYPE = 'value' ${abstractionFilter ? `AND AB
                 {clusters.length === 0 && loadingState !== 'loading' && (
                     <Alert severity="info">No clusters found for this abstraction.</Alert>
                 )}
-                {clusters.map((cluster, idx) => {
-                    const implementations = parseDuckDBList(cluster.cluster_implementations);
-                    //console.log("CLUSTER IMPLS " + implementations)
 
-                    const unique_values = parseDuckDBList(cluster.unique_values);
-
-                    // any other fields to show as cluster meta (excluding id, cluster_implementations, unique_values)
-                    const metaKeys = Object.keys(cluster).filter(
-                        (k) => !['id', 'cluster_implementations', 'unique_values'].includes(k)
-                    );
-
-                    return (
-                        <Accordion key={cluster.id ?? idx} sx={{ mb: 1 }}>
-                            <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                                <Typography sx={{ flex: 1 }} variant="h6" component="div">
-                                    {cluster.SHEETID + '@' + cluster.Y}, Size: {implementations.length}
-                                </Typography>
-                            </AccordionSummary>
-                            <AccordionDetails>
-                                {/* Optionally display other metadata */}
-                                {metaKeys.filter(k => !['cluster_size', 'SHEETID', 'X', 'Y', 'ABSTRACTIONID'].includes(k)).length > 0 && (
-                                    <Box sx={{ mt: 2 }}>
-                                        <Typography variant="subtitle2">Actuations (Output SRM)</Typography>
-                                        <Table size="small">
-                                            <TableHead>
-                                                <TableRow>
-                                                    <TableCell>Test@Invocation (Actuation Sheet)</TableCell>
-                                                    <TableCell>Output</TableCell>
-                                                </TableRow>
-                                            </TableHead>
-                                            <TableBody>
-                                                {metaKeys.filter(k => !['cluster_size', 'SHEETID', 'X', 'Y', 'ABSTRACTIONID'].includes(k)).map((key) => (
-                                                    <TableRow key={key}>
-                                                        <TableCell>{key}</TableCell>
-                                                        <TableCell>{String(cluster[key])}</TableCell>
-                                                    </TableRow>
-                                                ))}
-                                            </TableBody>
-                                        </Table>
-                                        <Typography variant="subtitle2">All Unique Values</Typography>
-                                        <Box>
-                                            {unique_values.map((val) => (
-                                                <Chip key={val.id} label={val.id} size="small" sx={{ m: 0.5 }} />
-                                            ))}
+                {clusters.length > 0 && (
+                    <Box sx={{ width: '100%', mt: 2 }}>
+                        <DataGrid
+                            rows={clusters.map((cluster, idx) => ({
+                                id: cluster.id ?? idx,
+                                sheetId: cluster.SHEETID,
+                                invocation: cluster.Y,
+                                output: cluster.test_based_oracle,
+                                outputCount: parseDuckDBList(cluster.cluster_implementations).length,
+                                uniqueValues: parseDuckDBList(cluster.unique_values),
+                                implementations: parseDuckDBList(cluster.cluster_implementations),
+                            }))}
+                            columns={[
+                                { field: 'sheetId', headerName: 'Sheet ID', width: 120,
+                                    renderCell: (params) => (
+                        
+                                        <Box
+                                            sx={{
+                                                fontWeight: 'bold',
+                                                width: '100%',
+                                                cursor: 'pointer',
+                                                textDecoration: 'underline',
+                                                color: 'primary.main'
+                                            }}
+                                            onClick={() => setOpenTestCase(params.value)}
+                                            title={`Show details for test case "${params.value}"`}
+                                        >
+                                            {params.value}
                                         </Box>
-                                    </Box>
-                                )}
-                                <Typography variant="subtitle2" gutterBottom>
-                                    Code Implementations
-                                </Typography>
-                                <Table component={Paper} size="small" sx={{ mb: 1 }}>
-                                    <TableHead>
-                                        <TableRow>
-                                            <TableCell>Implementation ID</TableCell>
-                                            <TableCell>Name</TableCell>
-                                            <TableCell>Variant ID</TableCell>
-                                            <TableCell>Adapter ID</TableCell>
-                                        </TableRow>
-                                    </TableHead>
-                                    <TableBody>
-                                        {implementations.map((impl: CodeVersion, idx2: number) => (
+                        
+                                    ), },
+                                { field: 'invocation', headerName: 'Test Invocation', width: 170,
+                                    renderCell: (params) => (
+                                        Number(params.value) + 1
+                                    ),
+                                 },
+                                {
+                                    field: 'output',
+                                    headerName: 'Most Frequent Output',
+                                    width: 220,
+                                    renderCell: (params) => (
+                                        <Chip
+                                            label={renderHumanOutputValue(String(params.value))}
+                                            color="primary"
+                                            variant="filled"
+                                            size="small"
+                                        />
+                                    ),
+                                },
+                                {
+                                    field: 'outputCount',
+                                    headerName: 'Count',
+                                    type: 'number',
+                                    width: 100,
+                                },
+                                {
+                                    field: 'implementations',
+                                    headerName: 'Implementations',
+                                    width: 325,
+                                    flex: 1,
+                                    sortable: false,
+                                    renderCell: (params) => (
+                                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                                            {Array.isArray(params.value) &&
+                                                params.value.map((impl: any, i: number) => {
+                                                    // Try to resolve code candidate for link (safe check)
+                                                    let cand;
+                                                    try {
+                                                        cand = getCodeCandidate(impl.id); // "getCodeCandidate" in scope
+                                                    } catch {
+                                                        cand = undefined;
+                                                    }
+                                                    if (
+                                                        cand &&
+                                                        cand.id &&
+                                                        cand.dataSource &&
+                                                        cand.name
+                                                    ) {
+                                                        return (
+                                                            <Link
+                                                                key={impl.id + i}
+                                                                href={`/web/lasso/search?query=*:*&filter=id:${cand.id}&ds=${cand.dataSource}`}
+                                                                target="_blank"
+                                                                rel="noopener"
+                                                                underline="hover"
+                                                                sx={{ mr: 0.7 }}
+                                                            >
+                                                                <Chip label={cand.name} size="small" />
+                                                            </Link>
+                                                        );
+                                                    }
+                                                    return (
+                                                        <Chip
+                                                            key={impl.id + i}
+                                                            label={impl.id}
+                                                            size="small"
+                                                            sx={{ mr: 0.7 }}
+                                                        />
+                                                    );
+                                                })}
+                                        </Box>
+                                    ),
+                                },
+                                {
+                                    field: 'uniqueValues',
+                                    headerName: 'All Outputs',
+                                    width: 180,
+                                    renderCell: (params) => (
+                                        <Box>
+                                            {Array.isArray(params.value) &&
+                                                params.value.map((val: any, idx: number) => (
+                                                    <Chip
+                                                        key={val.id ?? val + idx}
+                                                        label={val.id ?? String(val)}
+                                                        size="small"
+                                                        sx={{ m: 0.2 }}
+                                                    />
+                                                ))}
+                                        </Box>
+                                    ),
+                                },
+                            ] as GridColDef[]}
+                            pageSize={8}
+                            autoHeight
+                            disableSelectionOnClick
+                            getRowClassName={(params: GridRowClassNameParams) => {
+                                // Highlight the row(s) with the maximum outputCount (most agreed cluster)
+                                const maxCount = Math.max(
+                                    ...clusters.map(c =>
+                                        parseDuckDBList(c.cluster_implementations).length
+                                    )
+                                );
+                                return params.row.outputCount === maxCount
+                                    ? 'highlighted-row'
+                                    : '';
+                            }}
+                            sx={{
+                                '& .highlighted-row': {
+                                    backgroundColor: (theme) =>
+                                        theme.palette.mode === 'light' ? '#e3f2fd' : '#17407b',
+                                    fontWeight: 'bold',
+                                },
+                            }}
+                        />
+                        <Typography variant="body2" mt={2}>
+                            The most frequent output (oracle candidate) is highlighted, showing code implementations linking to their detail pages.
+                        </Typography>
+                    </Box>
+                )}
 
-                                            <TableRow key={impl.id + idx2}>
-                                                {queryResponse && getCodeCandidate(impl.id) ?
-                                                    <><TableCell><Typography variant="body2" color="text.secondary"><Link
-                                                        href={`/web/lasso/search?query=*:*&filter=id:${getCodeCandidate(impl.id).id}&ds=${getCodeCandidate(impl.id).dataSource}`}
-                                                        target="_blank"
-                                                        rel="noopener"
-                                                        underline="hover"
-                                                    >{impl.id}</Link>
-                                                    </Typography></TableCell><TableCell>{getCodeCandidate(impl.id).name}</TableCell></> : <><TableCell>{impl.id}</TableCell><TableCell>n/a</TableCell></>
-                                                }
-                                                <TableCell>{impl.variantId}</TableCell>
-                                                <TableCell>{impl.adapterId}</TableCell>
-                                            </TableRow>
-                                        ))}
-                                    </TableBody>
-                                </Table>
-                                {/* {implementations.map((impl: CodeVersion, idx2: number) => (
-                                    <Grid container spacing={3} sx={{ mt: 1 }}>
-                                        {queryResponse && getCodeCandidate(impl.id) ?
-                                            <Grid item xs={12} key={impl.id}>
-                                                <CodeSnippetCard snippet={getCodeCandidate(impl.id)} />
-                                            </Grid>
-                                            : null}
-                                    </Grid>
-                                ))} */}
+            <Dialog open={!!openTestCase} onClose={() => setOpenTestCase(null)} maxWidth="md" fullWidth>
+                <DialogTitle>
+                    Test Case: {openTestCase}
+                    <IconButton aria-label="close" onClick={() => setOpenTestCase(null)} sx={{ position: 'absolute', right: 8, top: 8 }}>
+                        <CloseIcon />
+                    </IconButton>
+                </DialogTitle>
+                <DialogContent>
+                    {openTestCase && [0].map((e) => {
+                        const test = getTestCase(openTestCase);
+                        return <React.Fragment>
+                            <Typography
+                                component="span"
+                                variant="body2"
+                                sx={{ color: 'text.primary', display: 'inline' }}
+                            >
+                                <small>{test.ssn ? "SSN" : "Code"}</small>
+                            </Typography>
+                            {test.ssn ?
+                                <ActuationSheet sheetSignature={test.signature} sheetData={SheetService.parseActuationSheet(test)} implementation={""} />
+                                : <CodeBlock language="java">{test.body}</CodeBlock>}
+                        </React.Fragment>
+                    })}
+                </DialogContent>
+            </Dialog>
 
-                            </AccordionDetails>
-                        </Accordion>
-                    );
-                })}
             </Box>
         </Box>
     );

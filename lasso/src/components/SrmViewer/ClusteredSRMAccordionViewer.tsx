@@ -479,7 +479,14 @@ SELECT count(*) AS cluster_size, list(SYSTEMID) AS cluster_implementations, * EX
             ...sortedImpls.map((impl) => {
                 const implKey = `${impl.id}_${impl.variantId}_${impl.adapterId}`;
                 const meta = implMeta[implKey];
-                const codeUnit = getCodeCandidate(impl.id);
+                // Try to resolve code candidate for link (safe check)
+                let cand;
+                try {
+                    cand = getCodeCandidate(impl.id); // "getCodeCandidate" in scope
+                } catch {
+                    cand = undefined;
+                }
+
                 return {
                     field: implKey,
                     headerName: impl.id,
@@ -500,7 +507,7 @@ SELECT count(*) AS cluster_size, list(SYSTEMID) AS cluster_implementations, * EX
                                 }}
                                 title="Show details for this implementation"
                             >
-                                {impl.id}
+                                {cand ? cand.name : impl.id}
                             </Box>
                             <Stack direction="row" spacing={0.5}>
                                 {meta.isOracle && (
@@ -535,14 +542,14 @@ SELECT count(*) AS cluster_size, list(SYSTEMID) AS cluster_implementations, * EX
         setGridRows(rows);
         setGridCols(columns);
 
-    }, [clusters]);
+    }, [clusters, queryResponse]);
 
     // ----------- END ORACLE CLUSTER MATRIX LOGIC -----------
     // ----------- RENDER -----------
     return (
         <Box sx={{ p: 2 }}>
             <Typography variant="h5" mb={2}>
-                Behavioral Clustering (Implementations by Abstraction)
+                Behavioral Clustering (by Abstraction)
                 <Typography variant="h6" component="div">Clusters implementations by their exhibited run-time behavior (based on output SRM)</Typography>
             </Typography>
             {/* <Typography>
@@ -608,7 +615,6 @@ SELECT count(*) AS cluster_size, list(SYSTEMID) AS cluster_implementations, * EX
                         <DataGrid
                             rows={gridRows}
                             columns={gridCols}
-                            hideFooter
                             density="compact"
                             getRowId={row => row.id}
                             getRowClassName={params =>

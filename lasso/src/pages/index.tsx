@@ -95,6 +95,11 @@ function HomepageHeader() {
   );
 }
 
+// You can customize this value
+const featuredSearchUrl = 'lasso/result?executionId=69184769-d4c2-43d0-a101-987e5c30d674';
+const featuredSearchTitle = 'LSL Study Pipelines in Action';
+const featuredSearchDesc = 'Explore LSL pipeline results';
+
 export default function Home(): JSX.Element {
   const { siteConfig } = useDocusaurusContext();
 
@@ -133,29 +138,92 @@ export default function Home(): JSX.Element {
         </section>
 
         <section>
-          <br/>
           <div className="container padding--sm">
             <div className="text--center">
               <Heading as="h2">Try LASSO in 5 Minutes</Heading>
             </div>
             <div className="row margin--lg padding--lg shadow--md">
-              <div className="row">
-                <div className={clsx('col col--10')}>
-                  <div>
-                    <p>To get started, run the following two commands in a local directory on your machine (requires <a href="https://docs.docker.com/compose/">docker compose</a>):</p>
-                    <CodeBlock
-                      language="bash">
-                      {`curl https://raw.githubusercontent.com/SoftwareObservatorium/lasso/refs/heads/develop/docker/compose/docker-compose-embedded.yml -o docker-compose.yml
-docker compose up
-                    `}
-                    </CodeBlock>
-                    <p>Wait until all services started (LASSO platform, Code Search Index and Artifact Repository) and then open LASSO's dashboard at <a href="http://localhost:10222/webui/">http://localhost:10222/webui/</a> (login: admin / admin123). See <a href="./docs/quickstart/scenario">5 Minute Tutorial</a> for details, and <a href="./labs">Labs (Playground)</a> for more options.</p>
+              <div className={clsx('col col--10 col--offset-1')}>
+                <p>
+                  To get started, run the following two commands in a local directory on your machine (requires{' '}
+                  <a href="https://docs.docker.com/compose/">docker compose</a>):
+                </p>
+                <div className="codeBlockWrapper">
+                  <CodeBlock language="bash">
+                    {`curl https://raw.githubusercontent.com/SoftwareObservatorium/lasso/refs/heads/develop/docker/compose/docker-compose-embedded.yml -o docker-compose.yml
+docker compose up`}
+                  </CodeBlock>
+                </div>
+                <p>
+                  Wait until all services started (LASSO platform, Code Search Index and Artifact Repository) and then open LASSO's dashboard at{' '}
+                  <a href="http://localhost:10222/webui/">http://localhost:10222/webui/</a> (login: admin / admin123).
+                  See <a href="./docs/quickstart/scenario">5 Minute Tutorial</a> for details, and{' '}
+                  <a href="./labs">Labs (Playground)</a> for more options.
+                </p>
+
+                {/* --- "Eye-catcher" Card Section --- */}
+                <div className="featured-search-card margin-top--lg margin-bottom--lg">
+                  <div className="featured-search-card-header">
+
+                    Example Run
+                  </div>
+                  <div className="featured-search-card-body">
+                    <div className="featured-search-title">{featuredSearchTitle}</div>
+                    <div className="featured-search-desc">{featuredSearchDesc}</div>
+                    <a
+                      className="button button--primary"
+                      href={featuredSearchUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{ marginTop: "1em" }}>
+                      View Pipeline Results
+                    </a>
                   </div>
                 </div>
+                <style>{`
+              .featured-search-card {
+                border: 2px solid #0075FF;
+                border-radius: 0.7em;
+                background: #F1F7FF;
+                text-align: center;
+                padding: 2em 1em;
+                box-shadow: 0 2px 16px 0 #0075ff33;
+                margin: 2em 0;
+                max-width: 480px;
+                margin-left: auto;
+                margin-right: auto;
+                transition: box-shadow 0.18s;
+              }
+              .featured-search-card:hover {
+                box-shadow: 0 4px 32px 0 #0075ff66;
+              }
+              .featured-search-card-header {
+                color: #0075FF;
+                font-weight: bold;
+                font-size: 1.2em;
+                margin-bottom: 0.7em;
+                letter-spacing: 0.02em;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 0.3em;
+              }
+              .featured-search-title {
+                font-size: 1.1em;
+                font-weight: 600;
+                margin-bottom: 0.2em;
+              }
+              .featured-search-desc {
+                color: #444;
+                font-size: 0.97em;
+                margin-bottom: 0.9em;
+              }
+            `}</style>
+                {/* --- End eye-catcher --- */}
+
               </div>
             </div>
           </div>
-
         </section>
 
         <HomepageFeatures />

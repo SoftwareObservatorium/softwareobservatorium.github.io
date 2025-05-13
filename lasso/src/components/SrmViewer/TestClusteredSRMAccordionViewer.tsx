@@ -291,7 +291,7 @@ from tdse_srm.parquet as tbl1 where TYPE = 'value' ${abstractionFilter ? `AND AB
     return (
         <Box sx={{ p: 2 }}>
             <Typography variant="h5" mb={2}>
-                Test Clustering (by Abstraction)
+                Test Output Clustering (by Abstraction)
                 <Typography variant="h6" component="div">Identifies most frequent outputs that may serve as oracle values (based on output SRM)</Typography>
             </Typography>
 

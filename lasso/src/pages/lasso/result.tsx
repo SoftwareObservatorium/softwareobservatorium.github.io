@@ -15,9 +15,6 @@ import CodeBlock from '@theme/CodeBlock';
 import BrowserOnly from '@docusaurus/BrowserOnly';
 
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import Code from '@mui/icons-material/Code';
-import ActuationSheet from '@site/src/components/Sheet/ActuationSheet';
-import SheetService from '@site/src/components/Sheet/SheetService';
 import AuthService from '@site/src/services/AuthService';
 import { Editor } from '@monaco-editor/react';
 import GraphComponent from '@site/src/components/Graph/graph';
@@ -25,7 +22,8 @@ import GraphComponent from '@site/src/components/Graph/graph';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import ClusteredSRMAccordionViewer from '@site/src/components/SrmViewer/ClusteredSRMAccordionViewer';
 import TestClusteredSRMAccordionViewer from '@site/src/components/SrmViewer/TestClusteredSRMAccordionViewer';
-import { CodeSnippetCard } from '@site/src/components/CodeSnippet/CodeSnippetCard';
+import { CodeUnitTable } from '@site/src/components/Results/codeunit';
+import { TestTable } from '@site/src/components/Results/testcases';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -253,7 +251,7 @@ DRAFT
                     <CircularProgress size="3rem" /> : null}
                 </Typography>
                 {scriptInfo.status === "SUCCESSFUL" ?
-                  <p>Note: You can now explore the SRMs in the 'SRM Explorer' tab above.</p> : null}
+                  <p>Note: You can now explore the SRMs in the tabs above.</p> : null}
 
                 {queryResponse ?
                   <>
@@ -277,11 +275,13 @@ DRAFT
                       </Select>
                     </FormControl>
                     <br />
-                    <Typography>
+                    {/* <Typography>
                       The following functional abstractions and their corresponding stimulus matrices were defined.
                     </Typography>
 
-                    <br />
+                     */}
+
+                     <br />
 
                     {queryResponse.abstractions.map((ab) => (
 
@@ -302,52 +302,20 @@ DRAFT
                           <CodeBlock
                             language="groovy">{ab.specification?.interfaceSpecification?.lqlQuery}</CodeBlock>
 
-                          <Typography>
+                          <Typography variant="h6" gutterBottom>
                             {ab.codeUnits.length} Code Module(s)
                           </Typography>
 
-                          <Grid container spacing={3} sx={{ mt: 1 }}>
-                            {ab.codeUnits.map((codeUnit) => (
-                              <Grid item xs={12} key={codeUnit.id}>
-                                <CodeSnippetCard snippet={codeUnit} />
-                              </Grid>
-                            ))}
-                          </Grid>
+                          <CodeUnitTable codeUnits={ab.codeUnits} />
 
                           <br/>
 
-                          <Typography>
+                          <Typography variant="h6" gutterBottom>
                             {ab.specification.tests.length} Test(s)
                           </Typography>
 
-                          <List dense={true}>
+                          <TestTable tests={ab.specification.tests} />
 
-                            {ab.specification.tests.map((test, idx) => (
-                              <ListItem key={idx}>
-                                <ListItemIcon>
-                                  <Code />
-                                </ListItemIcon>
-                                <ListItemText
-                                  primary={test.signature}
-                                  secondary={
-                                    <React.Fragment>
-                                      <Typography
-                                        component="span"
-                                        variant="body2"
-                                        sx={{ color: 'text.primary', display: 'inline' }}
-                                      >
-                                        <small>{test.ssn ? "SSN" : "Code"}</small>
-                                      </Typography>
-                                      {test.ssn ?
-                                        <ActuationSheet sheetSignature={test.signature} sheetData={SheetService.parseActuationSheet(test)} implementation={""} />
-                                        : <CodeBlock language="java">{test.body}</CodeBlock>}
-                                    </React.Fragment>
-                                  }
-                                ></ListItemText>
-
-                              </ListItem>
-                            ))}
-                          </List>
                         </AccordionDetails>
                       </Accordion>
                     ))}</>

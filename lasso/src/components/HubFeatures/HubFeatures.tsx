@@ -25,21 +25,20 @@ export class TDSExamples {
 }`,
             sheets: [{
                 name: "testEncode",
-                signature: "(p1=byte[])",
-                body: `{"cells":{"A1":{},"B1":"create","C1":"Base64"}}\n{"cells":{"A2":"\\"SGVsbG8gV29ybGQh\\".getBytes()","B2":"encode","C2":"A1","D2":"?p1"}}`,
+                signature: "(p1=byte[], p2=byte[])",
+                body: `{"cells":{"A1":{},"B1":"create","C1":"Base64"}}\n{"cells":{"A2":"?p2","B2":"encode","C2":"A1","D2":"?p1"}}`,
                 invocations: [
                     {
                         id: 0,
                         sequenceSheetName: "testEncode",
                         signature: "",
-                        params: ["\"Hello World!\".getBytes()"]
+                        params: ["\"Hello World!\".getBytes()", "\"SGVsbG8gV29ybGQh\".getBytes()"]
                     },
-
                     {
                         id: 1,
                         sequenceSheetName: "testEncode",
                         signature: "",
-                        params: ["\"Hello World\".getBytes()"]
+                        params: ["\"Hello World\".getBytes()", "\"SGVsbG8gV29ybGQ=\".getBytes()"]
                     }]
             }]
         },

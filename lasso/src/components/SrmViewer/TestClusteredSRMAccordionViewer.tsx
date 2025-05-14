@@ -435,7 +435,7 @@ from tdse_srm.parquet as tbl1 where TYPE = 'value' ${abstractionFilter ? `AND AB
                                                     return (
                                                         <Chip
                                                             key={impl.id + i}
-                                                            label={impl.id}
+                                                            label={impl.id + (impl.variantId != 'original' ? ` (${impl.variantId})` : "")}
                                                             size="small"
                                                             sx={{ mr: 0.7 }}
                                                         />

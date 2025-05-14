@@ -32,9 +32,11 @@ import { CodeSnippetCard } from '../CodeSnippet/CodeSnippetCard';
 import { DataGrid, GridColDef, GridRenderCellParams } from '@mui/x-data-grid';
 import CloseIcon from '@mui/icons-material/Close';
 import ErrorIcon from '@mui/icons-material/Error';
+import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import ActuationSheet from '../Sheet/ActuationSheet';
 import SheetService from '../Sheet/SheetService';
 import CodeBlock from '@theme/CodeBlock';
+
 
 // ---- CLUSTER COLORS & TAGS ----
 // const CLUSTER_COLORS = [
@@ -352,8 +354,14 @@ SELECT count(*) AS cluster_size, list(SYSTEMID) AS cluster_implementations, * EX
 
         // sort
         // After allImpls computed:
-        const oracleImpls = allImpls.filter(i => i.id === 'oracle');
-        const nonOracleImpls = allImpls.filter(i => i.id !== 'oracle');
+
+        // sort by "original" (in case of mutation testing)
+        const originalImpls = allImpls.filter(i => i.variantId === 'original');
+        const nonOriginalImpls = allImpls.filter(i => i.id !== 'original');
+        const sortedImplsOriginal = [...originalImpls, ...nonOriginalImpls];
+
+        const oracleImpls = sortedImplsOriginal.filter(i => i.id === 'oracle');
+        const nonOracleImpls = sortedImplsOriginal.filter(i => i.id !== 'oracle');
         const sortedImpls = [...oracleImpls, ...nonOracleImpls];
 
         // 2. Marking: find the cluster with the most members
@@ -507,7 +515,7 @@ SELECT count(*) AS cluster_size, list(SYSTEMID) AS cluster_implementations, * EX
                                 }}
                                 title="Show details for this implementation"
                             >
-                                {cand ? cand.name : impl.id}
+                                {cand ? cand.name : impl.id} {impl.variantId != 'original' ? <Chip label={impl.variantId} size="small" /> : null}
                             </Box>
                             <Stack direction="row" spacing={0.5}>
                                 {meta.isOracle && (
@@ -609,6 +617,7 @@ SELECT count(*) AS cluster_size, list(SYSTEMID) AS cluster_implementations, * EX
                     <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 2 }}>
                         <Chip size="small" color="success" label="cluster-based oracle" />
                         <Chip size="small" color="info" label="specified oracle" />
+                        <Chip size="small" label="Variant" />
                         <Box>Column color: indicates cluster membership</Box>
                     </Stack>
                     <Box sx={{ height: 500 }}>
@@ -674,7 +683,7 @@ SELECT count(*) AS cluster_size, list(SYSTEMID) AS cluster_implementations, * EX
                                         <TableCell>Cluster {idx + 1}</TableCell>
                                         <TableCell>{implementations.length}</TableCell>
                                         <TableCell>
-                                            {implementations.map(i => i.id).join(", ")}
+                                            {implementations.map(i => `${i.id} (${i.variantId})`).join(", ")}
                                         </TableCell>
                                     </TableRow>
                                 );

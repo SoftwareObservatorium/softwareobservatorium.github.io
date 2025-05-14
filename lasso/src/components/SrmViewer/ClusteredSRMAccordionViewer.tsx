@@ -357,7 +357,7 @@ SELECT count(*) AS cluster_size, list(SYSTEMID) AS cluster_implementations, * EX
 
         // sort by "original" (in case of mutation testing)
         const originalImpls = allImpls.filter(i => i.variantId === 'original');
-        const nonOriginalImpls = allImpls.filter(i => i.id !== 'original');
+        const nonOriginalImpls = allImpls.filter(i => i.variantId !== 'original');
         const sortedImplsOriginal = [...originalImpls, ...nonOriginalImpls];
 
         const oracleImpls = sortedImplsOriginal.filter(i => i.id === 'oracle');

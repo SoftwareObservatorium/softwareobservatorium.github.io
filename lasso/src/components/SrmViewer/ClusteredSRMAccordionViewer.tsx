@@ -119,6 +119,8 @@ export const ClusteredSRMAccordionViewer: React.FC<any> = ({
     const [error, setError] = useState<string | null>(null);
 
     const [limitOracles, setLimitOracles] = useState(false);
+    const [mutants, setMutants] = useState<CodeVersion[]>([]);
+    const [mutantsKilled, setMutantsKilled] = useState<number>(0);
 
     const [queryResponse, setQueryResponse] = useState<SearchSrmQueryResponse>()
 
@@ -359,6 +361,22 @@ SELECT count(*) AS cluster_size, list(SYSTEMID) AS cluster_implementations, * EX
         const originalImpls = allImpls.filter(i => i.variantId === 'original');
         const nonOriginalImpls = allImpls.filter(i => i.variantId !== 'original');
         const sortedImplsOriginal = [...originalImpls, ...nonOriginalImpls];
+
+        // identify if mutants are present
+        const mutantImpls = allImpls.filter(i => i.variantId.startsWith('mutant'));
+        if (mutantImpls && mutantImpls.length > 0) {
+            setMutants(mutantImpls);
+
+            if (clusters.length > 0) {
+                const clusterImpls = clusters.map((cluster) => parseDuckDBList(cluster.cluster_implementations)).find((impls) => {
+                    return impls.find((impl) => impl.variantId === 'original');
+                });
+                            // FIXME identify cluster of original implementation
+                console.log("Found cluster of original impl " + clusterImpls.length);
+
+                setMutantsKilled(mutantImpls.length - clusterImpls.length - 1);
+            }
+        }
 
         const oracleImpls = sortedImplsOriginal.filter(i => i.id === 'oracle');
         const nonOracleImpls = sortedImplsOriginal.filter(i => i.id !== 'oracle');
@@ -657,57 +675,85 @@ SELECT count(*) AS cluster_size, list(SYSTEMID) AS cluster_implementations, * EX
 
             {/* --- Cluster Statistics Panel --- */}
             {clusters.length > 0 && (
-                <Box mb={2}>
-                    <Typography variant="h6" gutterBottom>Cluster Statistics</Typography>
-                    <Table size="small" sx={{ width: 'auto', mb: 1 }}>
-                        <TableHead>
-                            <TableRow>
-                                <TableCell>Color</TableCell>
-                                <TableCell>Cluster #</TableCell>
-                                <TableCell>Number of Implementations</TableCell>
-                                <TableCell>Implementations</TableCell>
-                            </TableRow>
-                        </TableHead>
-                        <TableBody>
-                            {clusters.map((cluster, idx) => {
-                                const clusterColor = getClusterColor(idx);
-                                const implementations = parseDuckDBList(cluster.cluster_implementations);
-                                return (
-                                    <TableRow key={idx}>
-                                        <TableCell>
-                                            <Box sx={{
-                                                background: clusterColor,
-                                                width: 28, height: 18, borderRadius: '4px', border: '1px solid #bbb'
-                                            }} />
-                                        </TableCell>
-                                        <TableCell>Cluster {idx + 1}</TableCell>
-                                        <TableCell>{implementations.length}</TableCell>
-                                        <TableCell>
-                                            {implementations.map(i => `${i.id} (${i.variantId})`).join(", ")}
-                                        </TableCell>
-                                    </TableRow>
-                                );
-                            })}
-                        </TableBody>
-                    </Table>
-                    <Typography variant="body2">
-                        Total number of test cases: <b>{
-                            (() => {
-                                // All test invocation labels from all clusters
-                                const set = new Set();
-                                clusters.forEach(cluster => {
-                                    Object.keys(cluster).forEach(key => {
-                                        if (!['id', 'cluster_implementations', 'cluster_size', 'ABSTRACTIONID', 'unique_values'].includes(key)) {
-                                            const testCase = key.split('@')[0];
-                                            set.add(testCase);
-                                        }
+                <>
+                    {mutants.length > 0 && (
+                        <Box mb={2}>
+                            <Typography variant="h6" gutterBottom>Mutation Coverage</Typography>
+
+                            <Typography variant="body2">
+                                Total number of mutants: <b>{mutants.length}</b>
+                            </Typography>
+                            <Typography variant="body2">
+                                Total number of killed mutants: <b>{mutantsKilled}</b>
+                            </Typography>
+                            <Typography variant="body2">
+                                Mutation Score: <b>{mutantsKilled / mutants.length}</b>
+                            </Typography>
+                        </Box>
+                    )}
+
+                    <Box mb={2}>
+
+                        <Typography variant="h6" gutterBottom>Cluster Statistics</Typography>
+                        <Typography variant="body2">
+                            Total number of test cases: <b>{
+                                (() => {
+                                    // All test invocation labels from all clusters
+                                    const set = new Set();
+                                    clusters.forEach(cluster => {
+                                        Object.keys(cluster).forEach(key => {
+                                            if (!['id', 'cluster_implementations', 'cluster_size', 'ABSTRACTIONID', 'unique_values'].includes(key)) {
+                                                const testCase = key.split('@')[0];
+                                                set.add(testCase);
+                                            }
+                                        });
                                     });
-                                });
-                                return set.size;
-                            })()
-                        }</b>
-                    </Typography>
-                </Box>
+                                    return set.size;
+                                })()
+                            }</b>
+                        </Typography>
+                        <Typography variant="body2">
+                            Total number of code modules: <b>{
+                                (() => {
+                                    return clusters.flatMap(cluster => {
+                                        return parseDuckDBList(cluster.cluster_implementations);
+                                    }).length;
+                                })()
+                            }</b>
+                        </Typography>
+                        <br />
+                        <Table size="small" sx={{ width: 'auto', mb: 1 }}>
+                            <TableHead>
+                                <TableRow>
+                                    <TableCell>Color</TableCell>
+                                    <TableCell>Cluster #</TableCell>
+                                    <TableCell>Number of Implementations</TableCell>
+                                    <TableCell>Implementations</TableCell>
+                                </TableRow>
+                            </TableHead>
+                            <TableBody>
+                                {clusters.map((cluster, idx) => {
+                                    const clusterColor = getClusterColor(idx);
+                                    const implementations = parseDuckDBList(cluster.cluster_implementations);
+                                    return (
+                                        <TableRow key={idx}>
+                                            <TableCell>
+                                                <Box sx={{
+                                                    background: clusterColor,
+                                                    width: 28, height: 18, borderRadius: '4px', border: '1px solid #bbb'
+                                                }} />
+                                            </TableCell>
+                                            <TableCell>Cluster {idx + 1}</TableCell>
+                                            <TableCell>{implementations.length}</TableCell>
+                                            <TableCell>
+                                                {implementations.map(i => `${i.id} (${i.variantId})`).join(", ")}
+                                            </TableCell>
+                                        </TableRow>
+                                    );
+                                })}
+                            </TableBody>
+                        </Table>
+                    </Box></>
             )}
 
             <Dialog open={!!openTestCase} onClose={() => setOpenTestCase(null)} maxWidth="md" fullWidth>

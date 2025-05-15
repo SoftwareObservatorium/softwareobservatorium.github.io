@@ -37,18 +37,8 @@ import ActuationSheet from '../Sheet/ActuationSheet';
 import SheetService from '../Sheet/SheetService';
 import CodeBlock from '@theme/CodeBlock';
 
-
-// ---- CLUSTER COLORS & TAGS ----
-// const CLUSTER_COLORS = [
-//     "#90caf9", "#c5e1a5", "#ffcc80", "#f8bbd0", "#fff59d", "#a5d6a7", "#bcaaa4", "#bdbdbd", "#ffb3ba", "#baffc9"
-// ];
-// function getClusterColor(clusterIdx: number): string {
-//     return CLUSTER_COLORS[clusterIdx % CLUSTER_COLORS.length];
-// }
 function getClusterColor(clusterIdx: number): string {
-    // Generates a visually distinct color for each integer
-    // 360 = one full turn of the hue wheel, 53% saturation, 80% lightness for pastel
-    const hue = (clusterIdx * 137.508) % 360; // 137.508 is the golden angle to maximize separation
+    const hue = (clusterIdx * 137.508) % 360;
     return `hsl(${hue}, 53%, 80%)`;
 }
 
@@ -63,7 +53,6 @@ function parseDuckDBList(val: any): CodeVersion[] {
     }
     if (!str) return [];
     let myArr = str.split(',').map(s => s.trim()).filter(Boolean);
-
     return myArr.map(s => parseCodeVersion(s))
 }
 
@@ -84,15 +73,12 @@ export const renderHumanOutputValue = (value: string) => {
     if (value.startsWith('$CUT@')) {
         return value.substring('$CUT@'.length);
     }
-
     if (value.startsWith('$EXCEPTION@')) {
         return <><ErrorIcon />{value.substring('$EXCEPTION@'.length)}</>;
     }
-
     return value;
 };
 
-// --- Helper to separate testCase and statement
 function splitTestCaseAndStatement(statement: string): { testCase: string, testStmt: string } {
     const atIdx = statement.indexOf('@');
     if (atIdx === -1) return { testCase: statement, testStmt: '' };
@@ -102,7 +88,6 @@ function splitTestCaseAndStatement(statement: string): { testCase: string, testS
 }
 
 function getCoordinates(statement: string): number {
-    // str is like "...X"
     if (!statement.startsWith('...')) return 0;
     const atIdx = statement.indexOf('...');
     const stId = Number(statement.substring(atIdx + 3)) + 1;
@@ -121,22 +106,27 @@ export const ClusteredSRMAccordionViewer: React.FC<any> = ({
     const [limitOracles, setLimitOracles] = useState(false);
     const [mutants, setMutants] = useState<CodeVersion[]>([]);
     const [mutantsKilled, setMutantsKilled] = useState<number>(0);
-
     const [queryResponse, setQueryResponse] = useState<SearchSrmQueryResponse>()
 
     // ----------- DIALOG STATES -----------
     const [openTestCase, setOpenTestCase] = useState<any | null>(null);
-    // Holds the CodeVersion, not just key, for rich dialog
     const [openImpl, setOpenImpl] = useState<CodeVersion | null>(null);
 
     const dbRef = useRef<duckdb.AsyncDuckDB>();
     const isParquetLoaded = useRef(false);
 
+    // --- COLLAPSE PATCH: Collapsible row/column state ---
+    const [expandedTestCases, setExpandedTestCases] = useState<string[]>([]);
+    const [visibleClusters, setVisibleClusters] = useState<number[]>([]);
+    const [columnVisibilityModel, setColumnVisibilityModel] = useState<Record<string, boolean>>({});
+    const [showFirstPerCluster, setShowFirstPerCluster] = useState(false);
+    const [collapseAllRows, setCollapseAllRows] = useState(false);
+
+    // Load CLUSTER DATA/ABSTRACTIONS/...
     const queryScript = () => {
         const request = new SearchSrmQueryRequest()
         request.executionId = executionId
         request.forAction = ""
-
         return LassoService.queryScript(request)
             .then(
                 (response) => {
@@ -151,7 +141,6 @@ export const ClusteredSRMAccordionViewer: React.FC<any> = ({
                             error.response.data.message) ||
                         error.message ||
                         error.toString();
-                    console.log("queryScript attempt failed " + error)
                     return null;
                 }
             )
@@ -165,18 +154,13 @@ export const ClusteredSRMAccordionViewer: React.FC<any> = ({
         const cu = codeUnits.find((c) => c.id === id)
         return cu;
     }
-
     const getTestCase = (testCaseName: string) => {
         if (!queryResponse) {
             return null;
         }
-
-        console.log("test case name " + testCaseName);
-
         const tests = queryResponse.abstractions.find((ab) => ab.name === selectedAbstraction)
             .specification.tests;
         const test = tests.find((t) => t.signature === testCaseName)
-
         return test;
     }
 
@@ -245,7 +229,6 @@ export const ClusteredSRMAccordionViewer: React.FC<any> = ({
                 const db = await ensureDuckDbReady();
                 if (!db) throw new Error('DuckDB/Parquet not loaded');
                 const conn = await db.connect();
-
                 let baseSQL = ''
                 if (limitOracles) {
                     baseSQL = `WITH excluded_statements AS (
@@ -277,7 +260,6 @@ SELECT count(*) AS cluster_size, list(SYSTEMID) AS cluster_implementations, * EX
             WHERE type = 'value' and SYSTEMID != 'oracle' ${abstractionFilter ? `AND ABSTRACTIONID = '${abstractionFilter.replace("'", "''")}'` : ''})
     ON STATEMENT USING first(VALUE) ORDER BY SYSTEMID) as mypiv group by all order by cluster_size DESC`
                 }
-
                 const arrowResult = await conn.query(baseSQL);
                 const array = arrowResult.toArray().map((row: any, idx: number) => {
                     const base = row.toJSON();
@@ -321,25 +303,44 @@ SELECT count(*) AS cluster_size, list(SYSTEMID) AS cluster_implementations, * EX
         // eslint-disable-next-line
     }, [abstractions, selectedAbstraction, limitOracles]);
 
-    // Handler for abstraction change
     const handleAbstractionChange = (event: any) => {
         setSelectedAbstraction(event.target.value);
     };
 
-    // ------------ CLUSTER MATRIX ORACLE TAGGING LOGIC ------------
+    // --- COLLAPSE PATCH: Expand/collapse ALL groups on cluster reload ---
+    useEffect(() => {
+        const testCaseSet = new Set<string>();
+        clusters.forEach(cluster => {
+            Object.keys(cluster).forEach(key => {
+                if (!['id', 'cluster_implementations', 'cluster_size', 'ABSTRACTIONID', 'unique_values'].includes(key)) {
+                    const testCase = key.split('@')[0];
+                    testCaseSet.add(testCase);
+                }
+            });
+        });
+        setExpandedTestCases(Array.from(testCaseSet));
+        setVisibleClusters(clusters.map((_, i) => i));
+    }, [clusters]);
+
+    // ------------ CLUSTER MATRIX ORACLE TAGGING + COLLAPSIBLE UI LOGIC ------------
     const [gridRows, setGridRows] = useState<any[]>([]);
     const [gridCols, setGridCols] = useState<GridColDef[]>([]);
     const [implDisplayMeta, setImplDisplayMeta] = useState<Record<string, { isOracle: boolean, isClusterOracle: boolean, color: string }>>({});
+    // Needed for columns grouping
+    const [implToClusterIdx, setImplToClusterIdx] = useState<Record<string, number>>({});
+    const [sortedImpls, setSortedImpls] = useState<CodeVersion[]>([]);
 
     useEffect(() => {
         if (clusters.length === 0) {
             setGridRows([]);
             setGridCols([]);
             setImplDisplayMeta({});
+            setImplToClusterIdx({});
+            setSortedImpls([]);
             return;
         }
         // 1. Gather all unique implementation IDs and map them to clusters
-        const implToClusterIdx: Record<string, number> = {};
+        const implToClusterIdxLocal: Record<string, number> = {};
         const allImpls: CodeVersion[] = [];
         clusters.forEach((cluster, clusterIdx) => {
             const impls = parseDuckDBList(cluster.cluster_implementations);
@@ -350,14 +351,11 @@ SELECT count(*) AS cluster_size, list(SYSTEMID) AS cluster_implementations, * EX
                 )) {
                     allImpls.push(impl);
                 }
-                implToClusterIdx[key] = clusterIdx;
+                implToClusterIdxLocal[key] = clusterIdx;
             });
         });
 
-        // sort
-        // After allImpls computed:
-
-        // sort by "original" (in case of mutation testing)
+        // Sort by "original"
         const originalImpls = allImpls.filter(i => i.variantId === 'original');
         const nonOriginalImpls = allImpls.filter(i => i.variantId !== 'original');
         const sortedImplsOriginal = [...originalImpls, ...nonOriginalImpls];
@@ -371,18 +369,16 @@ SELECT count(*) AS cluster_size, list(SYSTEMID) AS cluster_implementations, * EX
                 const clusterImpls = clusters.map((cluster) => parseDuckDBList(cluster.cluster_implementations)).find((impls) => {
                     return impls.find((impl) => impl.variantId === 'original');
                 });
-                            // FIXME identify cluster of original implementation
-                console.log("Found cluster of original impl " + clusterImpls.length);
-
                 setMutantsKilled(mutantImpls.length - clusterImpls.length - 1);
             }
         }
 
         const oracleImpls = sortedImplsOriginal.filter(i => i.id === 'oracle');
         const nonOracleImpls = sortedImplsOriginal.filter(i => i.id !== 'oracle');
-        const sortedImpls = [...oracleImpls, ...nonOracleImpls];
+        const sortedImplsCombined = [...oracleImpls, ...nonOracleImpls];
+        setSortedImpls(sortedImplsCombined);
 
-        // 2. Marking: find the cluster with the most members
+        // 2. Marking: cluster-based oracles, colors
         let clusterBasedOracleImpls: CodeVersion[] = [];
         let largestClusterIdx = -1;
         if (clusters.length > 0) {
@@ -396,8 +392,6 @@ SELECT count(*) AS cluster_size, list(SYSTEMID) AS cluster_implementations, * EX
                 }
             });
         }
-
-        // 3. Marking: set isOracle (id === 'oracle'), isClusterOracle (in largest cluster) for all implementations
         const implMeta: Record<string, { isOracle: boolean, isClusterOracle: boolean, color: string }> = {};
         allImpls.forEach((impl) => {
             const key = `${impl.id}_${impl.variantId}_${impl.adapterId}`;
@@ -405,12 +399,13 @@ SELECT count(*) AS cluster_size, list(SYSTEMID) AS cluster_implementations, * EX
             const isClusterOracle = !!clusterBasedOracleImpls.find(i =>
                 i.id === impl.id && i.variantId === impl.variantId && i.adapterId === impl.adapterId
             );
-            const color = getClusterColor(implToClusterIdx[key]);
+            const color = getClusterColor(implToClusterIdxLocal[key]);
             implMeta[key] = { isOracle, isClusterOracle, color };
         });
         setImplDisplayMeta(implMeta);
+        setImplToClusterIdx(implToClusterIdxLocal);
 
-        // 4. Row grouping by test-case:
+        // 4. Row grouping and collapse logic
         const allStatements = new Set<string>();
         clusters.forEach(cluster => {
             Object.keys(cluster).forEach(key => {
@@ -419,60 +414,60 @@ SELECT count(*) AS cluster_size, list(SYSTEMID) AS cluster_implementations, * EX
                 }
             });
         });
-        // 5. Sort/group rows by testCase
         const parsedStmts = Array.from(allStatements).map(stmt => {
             const { testCase, testStmt } = splitTestCaseAndStatement(stmt);
             return { fullKey: stmt, testCase, testStmt };
         });
-
-        //parsedStmts.sort((a, b) => a.testCase.localeCompare(b.testCase) || a.testStmt.localeCompare(b.testStmt));
         parsedStmts.sort((a, b) => {
-            // sort by testCase (string) first
             const g = a.testCase.localeCompare(b.testCase);
             if (g !== 0) return g;
-            // then numerically by [x,y]
             const ax = getCoordinates(a.testStmt);
             const bx = getCoordinates(b.testStmt);
             return ax - bx;
         });
+
+        // --- COLLAPSE PATCH: rows only for expanded test cases ---
         const rows: any[] = [];
         let lastTestCase = '';
-
         parsedStmts.forEach(({ fullKey, testCase, testStmt }, idx) => {
             if (testCase !== lastTestCase) {
                 rows.push({
-                    id: `header_${testCase}_${idx}`,
+                    id: `header_${testCase}`,
                     statement: testCase,
                     testCase,
                     isCaseHeader: true,
                 });
                 lastTestCase = testCase;
             }
-            const row: any = {
-                id: fullKey,
-                statement: fullKey,
-                testCase,
-            };
-            allImpls.forEach((impl) => {
-                let value = "";
-                for (let cIdx = 0; cIdx < clusters.length; ++cIdx) {
-                    const cluster = clusters[cIdx];
-                    const impls = parseDuckDBList(cluster.cluster_implementations);
-                    if (impls.find(i =>
-                        i.id === impl.id && i.variantId === impl.variantId && i.adapterId === impl.adapterId
-                    )) {
-                        if (Object.prototype.hasOwnProperty.call(cluster, fullKey)) {
-                            value = cluster[fullKey];
+            // Only add invocation row if expanded and not in collapse all mode
+            if (!collapseAllRows && expandedTestCases.includes(testCase)) {
+                const row: any = {
+                    id: fullKey,
+                    statement: fullKey,
+                    testCase,
+                };
+                allImpls.forEach((impl) => {
+                    let value = "";
+                    for (let cIdx = 0; cIdx < clusters.length; ++cIdx) {
+                        const cluster = clusters[cIdx];
+                        const impls = parseDuckDBList(cluster.cluster_implementations);
+                        if (impls.find(i =>
+                            i.id === impl.id && i.variantId === impl.variantId && i.adapterId === impl.adapterId
+                        )) {
+                            if (Object.prototype.hasOwnProperty.call(cluster, fullKey)) {
+                                value = cluster[fullKey];
+                            }
+                            break;
                         }
-                        break;
                     }
-                }
-                row[`${impl.id}_${impl.variantId}_${impl.adapterId}`] = value ?? "";
-            });
-            rows.push(row);
+                    row[`${impl.id}_${impl.variantId}_${impl.adapterId}`] = value ?? "";
+                });
+                rows.push(row);
+            }
         });
+        setGridRows(rows);
 
-        // 6. Columns with header tags/chips!
+        // --- Columns: cluster grouping/visibility logic ---
         const columns: GridColDef[] = [
             {
                 field: 'statement',
@@ -482,37 +477,60 @@ SELECT count(*) AS cluster_size, list(SYSTEMID) AS cluster_implementations, * EX
                 flex: 1,
                 renderCell: (params: GridRenderCellParams) => {
                     if (params.row.isCaseHeader) {
+                        const expanded = expandedTestCases.includes(params.row.testCase);
                         return (
-                            <Box
-                                sx={{
-                                    fontWeight: 'bold',
-                                    width: '100%',
-                                    cursor: 'pointer',
-                                    textDecoration: 'underline',
-                                    color: 'primary.main'
-                                }}
-                                onClick={() => setOpenTestCase(params.row.statement)}
-                                title={`Show details for test case "${params.row.statement}"`}
-                            >
-                                {params.value}
-                            </Box>
+                            <>
+                                <Box
+                                    sx={{
+                                        fontWeight: 'bold',
+                                        width: '100%',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        cursor: 'pointer',
+                                        color: 'primary.main'
+                                    }}
+
+                                >
+                                    <span onClick={() => {
+                                        setExpandedTestCases(prev =>
+                                            prev.includes(params.row.testCase)
+                                                ? prev.filter(tc => tc !== params.row.testCase)
+                                                : [...prev, params.row.testCase]
+                                        );
+                                    }}
+                                        title={expanded ? "Collapse test case group" : "Expand test case group"} style={{ marginRight: 8, fontSize: 18 }}>{expanded ? "▼" : "▶"}</span>
+                                    <Box
+                                        sx={{
+                                            fontWeight: 'bold',
+                                            width: '100%',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            cursor: 'pointer',
+                                            color: 'primary.main'
+                                        }}
+                                        onClick={() => setOpenTestCase(params.row.statement)}
+                                        title={`Show details for test case "${params.row.statement}"`}
+                                    >
+                                        {params.value}
+                                    </Box>
+                                </Box>
+
+                            </>
                         );
                     }
                     const { testStmt } = splitTestCaseAndStatement(params.value as string || '');
                     return testStmt || params.value;
                 },
             },
-            ...sortedImpls.map((impl) => {
+            ...sortedImplsCombined.map((impl) => {
                 const implKey = `${impl.id}_${impl.variantId}_${impl.adapterId}`;
                 const meta = implMeta[implKey];
-                // Try to resolve code candidate for link (safe check)
                 let cand;
                 try {
-                    cand = getCodeCandidate(impl.id); // "getCodeCandidate" in scope
+                    cand = getCodeCandidate(impl.id);
                 } catch {
                     cand = undefined;
                 }
-
                 return {
                     field: implKey,
                     headerName: impl.id,
@@ -526,10 +544,9 @@ SELECT count(*) AS cluster_size, list(SYSTEMID) AS cluster_implementations, * EX
                                     color: "primary.main",
                                     textDecoration: "underline"
                                 }}
-                                // Clicking header opens impl dialog!
                                 onClick={e => {
                                     e.stopPropagation();
-                                    setOpenImpl(impl); // needs codeVersion in meta
+                                    setOpenImpl(impl);
                                 }}
                                 title="Show details for this implementation"
                             >
@@ -546,7 +563,19 @@ SELECT count(*) AS cluster_size, list(SYSTEMID) AS cluster_implementations, * EX
                         </Stack>
                     ),
                     renderCell: (params: GridRenderCellParams) => {
-                        if (params.row.isCaseHeader) return '';
+                        if (params.row.isCaseHeader) return (
+                            <Box sx={{
+                                bgcolor: meta.color,
+                                px: 1,
+                                py: 0.5,
+                                borderRadius: 1,
+                                minHeight: "32px",
+                                width: "100%",
+                                overflow: "hidden",
+                                textOverflow: "ellipsis",
+                            }}>{""}</Box>
+                        );
+
                         return (
                             <Box sx={{
                                 bgcolor: meta.color,
@@ -564,23 +593,45 @@ SELECT count(*) AS cluster_size, list(SYSTEMID) AS cluster_implementations, * EX
                 } as GridColDef;
             }),
         ];
-
-        setGridRows(rows);
         setGridCols(columns);
+    }, [clusters, queryResponse, expandedTestCases, collapseAllRows]);
 
-    }, [clusters, queryResponse]);
+    // --- COLLAPSE PATCH: Column visibility according to cluster selection ---
+    useEffect(() => {
+        if (!sortedImpls || !implToClusterIdx) return;
+        const model: Record<string, boolean> = {};
+        if (showFirstPerCluster) {
+            // Only first impl per cluster
+            const handledClusters = new Set<number>();
+            sortedImpls.forEach(impl => {
+                const key = `${impl.id}_${impl.variantId}_${impl.adapterId}`;
+                const clusterIdx = implToClusterIdx[key];
+                if (!handledClusters.has(clusterIdx)) {
+                    model[key] = true;
+                    handledClusters.add(clusterIdx);
+                } else {
+                    model[key] = false;
+                }
+            });
+        } else {
+            sortedImpls.forEach(impl => {
+                const key = `${impl.id}_${impl.variantId}_${impl.adapterId}`;
+                const clusterIdx = implToClusterIdx[key];
+                model[key] = visibleClusters.includes(clusterIdx);
+            });
+        }
+        setColumnVisibilityModel(model);
+    }, [visibleClusters, sortedImpls, implToClusterIdx, showFirstPerCluster]);
 
     // ----------- END ORACLE CLUSTER MATRIX LOGIC -----------
     // ----------- RENDER -----------
+
     return (
         <Box sx={{ p: 2 }}>
             <Typography variant="h5" mb={2}>
                 Behavioral Clustering (by Abstraction)
                 <Typography variant="h6" component="div">Clusters implementations by their exhibited run-time behavior (based on output SRM)</Typography>
             </Typography>
-            {/* <Typography>
-                The cluster with the highest number of implementations is ranked first (i.e., may serve as an oracle using cluster-based voting)
-            </Typography> */}
             <CardContent>
                 {abstractions.length > 0 && (
                     <FormControl sx={{ minWidth: 220 }}>
@@ -620,6 +671,47 @@ SELECT count(*) AS cluster_size, list(SYSTEMID) AS cluster_implementations, * EX
             )}
             {error && <Alert severity="error">{error}</Alert>}
 
+            {/* --- COLLAPSE PATCH: Cluster column toggler --- */}
+            {clusters.length > 0 && (
+                <>
+                    <FormControl sx={{ mr: 2, minWidth: 200 }}>
+                        <InputLabel>Visible clusters</InputLabel>
+                        <Select
+                            multiple
+                            value={visibleClusters}
+                            onChange={e => setVisibleClusters(e.target.value as number[])}
+                            renderValue={selected => (selected as number[]).slice(0, 5).map(idx => `Cluster ${idx + 1}`).join(', ')}
+                        >
+                            {clusters.map((_, idx) => (
+                                <MenuItem key={idx} value={idx}>
+                                    <Checkbox checked={visibleClusters.includes(idx)} />
+                                    Cluster {idx + 1}
+                                </MenuItem>
+                            ))}
+                        </Select>
+                    </FormControl>
+                    <FormControlLabel
+                        control={
+                            <Checkbox
+                                checked={showFirstPerCluster}
+                                onChange={e => setShowFirstPerCluster(e.target.checked)}
+                                color="primary"
+                            />
+                        }
+                        label="Show only first implementation per cluster"
+                    />
+                    <FormControlLabel
+                        control={
+                            <Checkbox
+                                checked={collapseAllRows}
+                                onChange={e => setCollapseAllRows(e.target.checked)}
+                                color="primary"
+                            />
+                        }
+                        label="Collapse all rows (show only test case names)"
+                    />
+                </>
+            )}
 
             {/* --- COLORED CLUSTER MATRIX GRID + LEGEND --- */}
             {gridRows.length > 0 && (
@@ -647,10 +739,11 @@ SELECT count(*) AS cluster_size, list(SYSTEMID) AS cluster_implementations, * EX
                             getRowClassName={params =>
                                 params.row.isCaseHeader ? 'testcase-header-row' : ''
                             }
+                            columnVisibilityModel={columnVisibilityModel}
+                            onColumnVisibilityModelChange={model => setColumnVisibilityModel(model)}
                             sx={{
                                 '.MuiDataGrid-columnHeaders .MuiDataGrid-columnHeader': {
                                     backgroundColor: '#ececec',
-
                                     pt: 1, pb: 1,
                                     whiteSpace: 'normal',
                                     overflow: 'visible !important',
@@ -679,7 +772,6 @@ SELECT count(*) AS cluster_size, list(SYSTEMID) AS cluster_implementations, * EX
                     {mutants.length > 0 && (
                         <Box mb={2}>
                             <Typography variant="h6" gutterBottom>Mutation Coverage</Typography>
-
                             <Typography variant="body2">
                                 Total number of mutants: <b>{mutants.length}</b>
                             </Typography>
@@ -693,12 +785,10 @@ SELECT count(*) AS cluster_size, list(SYSTEMID) AS cluster_implementations, * EX
                     )}
 
                     <Box mb={2}>
-
                         <Typography variant="h6" gutterBottom>Cluster Statistics</Typography>
                         <Typography variant="body2">
                             Total number of test cases: <b>{
                                 (() => {
-                                    // All test invocation labels from all clusters
                                     const set = new Set();
                                     clusters.forEach(cluster => {
                                         Object.keys(cluster).forEach(key => {
@@ -735,25 +825,60 @@ SELECT count(*) AS cluster_size, list(SYSTEMID) AS cluster_implementations, * EX
                                 {clusters.map((cluster, idx) => {
                                     const clusterColor = getClusterColor(idx);
                                     const implementations = parseDuckDBList(cluster.cluster_implementations);
+
                                     return (
                                         <TableRow key={idx}>
                                             <TableCell>
                                                 <Box sx={{
                                                     background: clusterColor,
-                                                    width: 28, height: 18, borderRadius: '4px', border: '1px solid #bbb'
+                                                    width: 28,
+                                                    height: 18,
+                                                    borderRadius: '4px',
+                                                    border: '1px solid #bbb'
                                                 }} />
                                             </TableCell>
                                             <TableCell>Cluster {idx + 1}</TableCell>
                                             <TableCell>{implementations.length}</TableCell>
                                             <TableCell>
-                                                {implementations.map(i => `${i.id} (${i.variantId})`).join(", ")}
+                                                <Stack direction="row" spacing={1} flexWrap="wrap">
+                                                    {implementations.map((impl, i) => {
+                                                        // --- Show nice name as in DataGrid columns ---
+                                                        let cand;
+                                                        try {
+                                                            cand = getCodeCandidate(impl.id);
+                                                        } catch {
+                                                            cand = undefined;
+                                                        }
+                                                        const label = [
+                                                            (cand && cand.name) ? cand.name : impl.id," (",
+                                                            impl.variantId,", ",
+                                                            impl.adapterId, ")"
+                                                        ].filter(Boolean).join("");
+                                                        return (
+                                                            <Chip
+                                                                key={`${impl.id}_${impl.variantId}_${impl.adapterId}_${i}`}
+                                                                label={label}
+                                                                onClick={() => setOpenImpl(impl)}
+                                                                clickable
+                                                                sx={{
+                                                                    mb: 0.5,
+                                                                    bgcolor: clusterColor,
+                                                                    fontWeight: impl.id === 'oracle' ? 700 : 500,
+                                                                    border: impl.id === 'oracle' ? '2px solid #2196f3' : undefined,
+                                                                }}
+                                                                title="Click for implementation details"
+                                                            />
+                                                        );
+                                                    })}
+                                                </Stack>
                                             </TableCell>
                                         </TableRow>
                                     );
                                 })}
                             </TableBody>
                         </Table>
-                    </Box></>
+                    </Box>
+                </>
             )}
 
             <Dialog open={!!openTestCase} onClose={() => setOpenTestCase(null)} maxWidth="md" fullWidth>
@@ -772,11 +897,11 @@ SELECT count(*) AS cluster_size, list(SYSTEMID) AS cluster_implementations, * EX
                                 variant="body2"
                                 sx={{ color: 'text.primary', display: 'inline' }}
                             >
-                                <small>{test.ssn ? "SSN" : "Code"}</small>
+                                <small>{test?.ssn ? "SSN" : "Code"}</small>
                             </Typography>
-                            {test.ssn ?
+                            {test?.ssn ?
                                 <ActuationSheet sheetSignature={test.signature} sheetData={SheetService.parseActuationSheet(test)} implementation={""} />
-                                : <CodeBlock language="java">{test.body}</CodeBlock>}
+                                : <CodeBlock language="java">{test?.body}</CodeBlock>}
                         </React.Fragment>
                     })}
                 </DialogContent>
@@ -791,7 +916,6 @@ SELECT count(*) AS cluster_size, list(SYSTEMID) AS cluster_implementations, * EX
                 </DialogTitle>
                 <DialogContent>
                     {openImpl && openImpl.id != "oracle" && <CodeSnippetCard snippet={getCodeCandidate(openImpl?.id)} />}
-
                 </DialogContent>
             </Dialog>
 

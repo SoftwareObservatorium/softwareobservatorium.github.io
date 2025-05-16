@@ -141,3 +141,34 @@ export class CodeVersion {
     adapterId: string;
     oracle: boolean;
 }
+
+// ranking
+
+export class SystemMeta {
+    id: string;
+    variantId: string;
+    adapterId: string;
+    measures: any;
+}
+
+export class RankedCandidate {
+    rank: number;
+    candidate: SystemMeta;
+}
+
+export class RankingCriterion {
+    id: string;
+    objective: number;
+    weight: number;
+    priority: number;
+}
+
+export class RankRequest {
+    strategy: string;
+    candidates: SystemMeta[];
+    criteria: RankingCriterion[];
+}
+
+export class RankResponse {
+    rankedCandidates: RankedCandidate[];
+}

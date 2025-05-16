@@ -139,7 +139,7 @@ const ResultPage = () => {
       .then(
         (response) => {
           let queryResponse: SearchSrmQueryResponse = response.data
-          console.log("queryScript successful " + JSON.stringify(queryResponse))
+          //console.log("queryScript successful " + JSON.stringify(queryResponse))
 
           //
           setQueryResponse(queryResponse)

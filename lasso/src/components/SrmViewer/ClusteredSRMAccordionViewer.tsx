@@ -22,20 +22,29 @@ import {
     Dialog,
     DialogTitle,
     DialogContent,
-    IconButton
+    IconButton,
+    TextField,
+    TableContainer
 } from '@mui/material';
 import * as duckdb from '@duckdb/duckdb-wasm';
 import axios from 'axios';
-import { CodeVersion, SearchSrmQueryRequest, SearchSrmQueryResponse } from '@site/src/services/models';
+import { CodeVersion, RankedCandidate, SearchSrmQueryRequest, SearchSrmQueryResponse, SystemMeta } from '@site/src/services/models';
 import LassoService from '@site/src/services/LassoService';
 import { CodeSnippetCard } from '../CodeSnippet/CodeSnippetCard';
 import { DataGrid, GridColDef, GridRenderCellParams } from '@mui/x-data-grid';
 import CloseIcon from '@mui/icons-material/Close';
 import ErrorIcon from '@mui/icons-material/Error';
-import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import ActuationSheet from '../Sheet/ActuationSheet';
 import SheetService from '../Sheet/SheetService';
 import CodeBlock from '@theme/CodeBlock';
+import MutationTable from '../Results/mutation';
+import { buildCriteria, getMeasureMap, MetricSelection } from './clustering';
+
+const metricLabels: Record<string, string> = {
+    m_static_loc_td: 'Lines of Code (Index)',
+    m_static_complexity_td: 'Cyclomatic Complexity (Index)',
+    // ...all other metrics
+};
 
 function getClusterColor(clusterIdx: number): string {
     const hue = (clusterIdx * 137.508) % 360;
@@ -100,6 +109,9 @@ export const ClusteredSRMAccordionViewer: React.FC<any> = ({
     const [abstractions, setAbstractions] = useState<string[]>([]);
     const [selectedAbstraction, setSelectedAbstraction] = useState<string>('');
     const [clusters, setClusters] = useState<any[]>([]);
+    const [mutationDetails, setMutationDetails] = useState<any[]>([]);
+    const [measures, setMeasures] = useState<any[]>([]);
+    const [metrics, setMetrics] = useState<any[]>([]);
     const [loadingState, setLoadingState] = useState<'unloaded' | 'loading' | 'loaded' | 'error'>('unloaded');
     const [error, setError] = useState<string | null>(null);
 
@@ -121,6 +133,10 @@ export const ClusteredSRMAccordionViewer: React.FC<any> = ({
     const [columnVisibilityModel, setColumnVisibilityModel] = useState<Record<string, boolean>>({});
     const [showFirstPerCluster, setShowFirstPerCluster] = useState(false);
     const [collapseAllRows, setCollapseAllRows] = useState(false);
+
+    const [selectedMetrics, setSelectedMetrics] = useState<MetricSelection[]>([]);
+    const [perClusterSubclusters, setPerClusterSubclusters] = useState<Record<string, number>>({});
+    const [loadingSubclustering, setLoadingSubclustering] = useState(false);
 
     // Load CLUSTER DATA/ABSTRACTIONS/...
     const queryScript = () => {
@@ -162,6 +178,17 @@ export const ClusteredSRMAccordionViewer: React.FC<any> = ({
             .specification.tests;
         const test = tests.find((t) => t.signature === testCaseName)
         return test;
+    }
+
+    const getMutantDetails = (codeVersion: CodeVersion) => {
+        // objects -> capitalization!
+        if (mutationDetails) {
+            const md = mutationDetails.find((md) => md.id === codeVersion.id && md.VARIANTID === codeVersion.variantId && md.ADAPTERID === codeVersion.adapterId);
+
+            return JSON.parse(md?.VALUE);
+        } else {
+            return "";
+        }
     }
 
     // DuckDB init & Parquet registration
@@ -273,9 +300,34 @@ SELECT count(*) AS cluster_size, list(SYSTEMID) AS cluster_implementations, * EX
                         (base['Y'] ?? '') +
                         '_' +
                         idx;
-                    return base;
+                    return row.toJSON();
                 });
                 setClusters(array);
+
+                // do query for mutant details
+                const mutantSql = `SELECT systemid as id, variantId, adapterId, type, value FROM tdse_srm.parquet where sheetid = 'pitest' and type = 'mutant' ${abstractionFilter ? `AND ABSTRACTIONID = '${abstractionFilter.replace("'", "''")}'` : ''}`
+                const arrowMutantDetailsResult = await conn.query(mutantSql);
+                const mutantDetailsArray = arrowMutantDetailsResult.toArray().map((row: any, idx: number) => {
+                    return row.toJSON();
+                });
+                setMutationDetails(mutantDetailsArray);
+
+                // do query for measures
+                const measureSql = `SELECT systemid as id, variantId, adapterId, type, value FROM tdse_srm.parquet where sheetid = 'indexmeasures' or sheetid = 'jacoco' ${abstractionFilter ? `AND ABSTRACTIONID = '${abstractionFilter.replace("'", "''")}'` : ''}`
+                const arrowMeasureResult = await conn.query(measureSql);
+                const measuresArray = arrowMeasureResult.toArray().map((row: any, idx: number) => {
+                    return row.toJSON();
+                });
+                setMeasures(measuresArray);
+
+                // do query for measures / metrics
+                const metricSql = `SELECT distinct type FROM tdse_srm.parquet where sheetid = 'indexmeasures' or sheetid = 'jacoco' ${abstractionFilter ? `AND ABSTRACTIONID = '${abstractionFilter.replace("'", "''")}'` : ''}`
+                const arrowMetricsResult = await conn.query(metricSql);
+                const metricsArray = arrowMetricsResult.toArray().map((row: any, idx: number) => {
+                    return row.toJSON().TYPE;
+                });
+                setMetrics(metricsArray);
+
                 setLoadingState('loaded');
                 await conn.close();
             } catch (e: any) {
@@ -369,13 +421,36 @@ SELECT count(*) AS cluster_size, list(SYSTEMID) AS cluster_implementations, * EX
                 const clusterImpls = clusters.map((cluster) => parseDuckDBList(cluster.cluster_implementations)).find((impls) => {
                     return impls.find((impl) => impl.variantId === 'original');
                 });
-                setMutantsKilled(mutantImpls.length - clusterImpls.length - 1);
+                setMutantsKilled(mutantImpls.length - (clusterImpls.length - 1));
             }
         }
 
         const oracleImpls = sortedImplsOriginal.filter(i => i.id === 'oracle');
         const nonOracleImpls = sortedImplsOriginal.filter(i => i.id !== 'oracle');
         const sortedImplsCombined = [...oracleImpls, ...nonOracleImpls];
+
+        // sort by cluster, subcluster etc.
+        sortedImplsCombined.sort((a, b) => {
+            // 1. Main cluster
+            const aCluster = implToClusterIdx[`${a.id}_${a.variantId}_${a.adapterId}`];
+            const bCluster = implToClusterIdx[`${b.id}_${b.variantId}_${b.adapterId}`];
+            if (aCluster !== bCluster) return aCluster - bCluster;
+
+            // 2. Subcluster index from remote
+            const aSub = perClusterSubclusters[`${a.id}_${a.variantId}_${a.adapterId}`];
+            const bSub = perClusterSubclusters[`${b.id}_${b.variantId}_${b.adapterId}`];
+            if (aSub !== undefined && bSub !== undefined && aSub !== bSub) return aSub - bSub;
+            if (aSub !== undefined && bSub === undefined) return -1;
+            if (aSub === undefined && bSub !== undefined) return 1;
+
+            // 3. Implementation id
+            if (a.id !== b.id) return a.id.localeCompare(b.id);
+            // 4. Variant id
+            if (a.variantId !== b.variantId) return a.variantId.localeCompare(b.variantId);
+            // 5. Adapter id
+            return a.adapterId.localeCompare(b.adapterId);
+        });
+
         setSortedImpls(sortedImplsCombined);
 
         // 2. Marking: cluster-based oracles, colors
@@ -392,7 +467,7 @@ SELECT count(*) AS cluster_size, list(SYSTEMID) AS cluster_implementations, * EX
                 }
             });
         }
-        const implMeta: Record<string, { isOracle: boolean, isClusterOracle: boolean, color: string }> = {};
+        const implMeta: Record<string, { isOracle: boolean, isClusterOracle: boolean, color: string, subclusterIdx?: number }> = {};
         allImpls.forEach((impl) => {
             const key = `${impl.id}_${impl.variantId}_${impl.adapterId}`;
             const isOracle = impl.id === 'oracle';
@@ -400,7 +475,12 @@ SELECT count(*) AS cluster_size, list(SYSTEMID) AS cluster_implementations, * EX
                 i.id === impl.id && i.variantId === impl.variantId && i.adapterId === impl.adapterId
             );
             const color = getClusterColor(implToClusterIdxLocal[key]);
-            implMeta[key] = { isOracle, isClusterOracle, color };
+            implMeta[key] = {
+                isOracle, isClusterOracle, color,
+                ...(perClusterSubclusters[key] !== undefined
+                    ? { subclusterIdx: perClusterSubclusters[key] }
+                    : {})
+            };
         });
         setImplDisplayMeta(implMeta);
         setImplToClusterIdx(implToClusterIdxLocal);
@@ -525,6 +605,13 @@ SELECT count(*) AS cluster_size, list(SYSTEMID) AS cluster_implementations, * EX
             ...sortedImplsCombined.map((impl) => {
                 const implKey = `${impl.id}_${impl.variantId}_${impl.adapterId}`;
                 const meta = implMeta[implKey];
+                let clusterLabel = '';
+                if (meta?.subclusterIdx !== undefined) {
+                    clusterLabel = `${implToClusterIdxLocal[implKey] + 1}.${meta.subclusterIdx}`;
+                } else {
+                    clusterLabel = `${implToClusterIdxLocal[implKey] + 1}`;
+                }
+
                 let cand;
                 try {
                     cand = getCodeCandidate(impl.id);
@@ -563,9 +650,16 @@ SELECT count(*) AS cluster_size, list(SYSTEMID) AS cluster_implementations, * EX
                         </Stack>
                     ),
                     renderCell: (params: GridRenderCellParams) => {
+                        // Slight color hue shift based on subcluster (light/dark tones)
+                        let cellBg = meta.color;
+                        if (meta.subclusterIdx !== undefined) {
+                            // Modify the color by slightly changing the lightness
+                            const lightness = 80 - (meta.subclusterIdx * 8); // e.g. subcluster 0: 80%, 1: 72%...
+                            cellBg = meta.color.replace(/(\d+%)\)$/, `${lightness}%)`);
+                        }
                         if (params.row.isCaseHeader) return (
                             <Box sx={{
-                                bgcolor: meta.color,
+                                bgcolor: cellBg,
                                 px: 1,
                                 py: 0.5,
                                 borderRadius: 1,
@@ -573,7 +667,7 @@ SELECT count(*) AS cluster_size, list(SYSTEMID) AS cluster_implementations, * EX
                                 width: "100%",
                                 overflow: "hidden",
                                 textOverflow: "ellipsis",
-                            }}>{""}</Box>
+                            }}><Typography><Chip size="small" color="secondary" label={`Cluster ${clusterLabel}`} /></Typography></Box>
                         );
 
                         return (
@@ -594,7 +688,67 @@ SELECT count(*) AS cluster_size, list(SYSTEMID) AS cluster_implementations, * EX
             }),
         ];
         setGridCols(columns);
-    }, [clusters, queryResponse, expandedTestCases, collapseAllRows]);
+    }, [clusters, queryResponse, expandedTestCases, collapseAllRows,
+        perClusterSubclusters
+    ]);
+
+    useEffect(() => {
+        if (
+            selectedMetrics.length === 0 ||
+            !measures ||
+            clusters.length === 0
+        ) {
+            setPerClusterSubclusters({});
+            return;
+        }
+
+        let cancelled = false;
+        (async () => {
+            setLoadingSubclustering(true);
+            const newSubclusters: Record<string, number> = {};
+
+            for (let clusterIdx = 0; clusterIdx < clusters.length; ++clusterIdx) {
+                const cluster = clusters[clusterIdx];
+                const impls = parseDuckDBList(cluster.cluster_implementations);
+                if (impls.length <= 1) continue;
+
+                const candidates: SystemMeta[] = impls.map(impl => ({
+                    id: impl.id,
+                    variantId: impl.variantId,
+                    adapterId: impl.adapterId,
+                    measures: getMeasureMap(impl, selectedMetrics.map(m => m.id), measures),
+                }));
+                const criteria = buildCriteria(selectedMetrics);
+
+                try {
+                    const resp = await LassoService.rank({
+                        strategy: "HDS_SMOOP",
+                        candidates,
+                        criteria
+                    });
+
+                    // Write to lookup
+                    resp.data.rankedCandidates.forEach((item: RankedCandidate) => {
+                        const key = `${item.candidate.id}_${item.candidate.variantId}_${item.candidate.adapterId}`;
+                        //const mapped = rankToSubclusterIdx[item.rank];
+                        newSubclusters[key] = item.rank;
+                    });
+                } catch (e) {
+                    console.error("Remote ranking failed", e);
+                }
+            }
+            if (!cancelled) {
+                //console.log(JSON.stringify(newSubclusters))
+
+                setPerClusterSubclusters(newSubclusters);
+                setLoadingSubclustering(false);
+            }
+        })();
+
+        return () => {
+            cancelled = true;
+        };
+    }, [selectedMetrics, measures, clusters]);
 
     // --- COLLAPSE PATCH: Column visibility according to cluster selection ---
     useEffect(() => {
@@ -710,6 +864,99 @@ SELECT count(*) AS cluster_size, list(SYSTEMID) AS cluster_implementations, * EX
                         }
                         label="Collapse all rows (show only test case names)"
                     />
+
+                    {metrics && metrics.length > 0 && (
+                        <>                     <Divider></Divider>
+                            <Box mt={1}>
+                                <Typography mt={1}>Ranking Criteria for Subclustering</Typography>
+                                <TableContainer sx={{ maxHeight: 200 }}>
+                                    <Table size="small" stickyHeader
+                                        sx={{
+                                            fontSize: '0.90em',
+                                            '& td, & th': { py: 0.5, px: 1 },
+                                        }}
+                                    >
+                                        <TableHead>
+                                            <TableRow>
+                                                <TableCell>Use</TableCell>
+                                                <TableCell>Metric</TableCell>
+                                                <TableCell>Objective</TableCell>
+                                                <TableCell>Priority (1=highest)</TableCell>
+                                            </TableRow>
+                                        </TableHead>
+                                        <TableBody>
+                                            {metrics.map(metric => {
+                                                const selIdx = selectedMetrics.findIndex(m => m.id === metric);
+                                                const sel = selectedMetrics[selIdx];
+                                                return (
+                                                    <TableRow key={metric}>
+                                                        <TableCell>
+                                                            <Checkbox
+                                                                checked={!!sel}
+                                                                onChange={e => {
+                                                                    if (e.target.checked) {
+                                                                        setSelectedMetrics([
+                                                                            ...selectedMetrics,
+                                                                            { id: metric, objective: 0, priority: selectedMetrics.length + 1 }
+                                                                        ]);
+                                                                    } else {
+                                                                        setSelectedMetrics(selectedMetrics.filter(m => m.id !== metric));
+                                                                    }
+                                                                }}
+                                                            />
+                                                        </TableCell>
+                                                        <TableCell>{metricLabels[metric] || metric}</TableCell>
+                                                        <TableCell>
+                                                            {sel ? (
+                                                                <Select
+                                                                    size="small"
+                                                                    value={sel.objective}
+                                                                    onChange={evt => {
+                                                                        const v = Number(evt.target.value) as 0 | 1;
+                                                                        setSelectedMetrics(selectedMetrics.map(m =>
+                                                                            m.id === metric ? { ...m, objective: v } : m
+                                                                        ));
+                                                                    }}
+                                                                >
+                                                                    <MenuItem value={0}>Minimize</MenuItem>
+                                                                    <MenuItem value={1}>Maximize</MenuItem>
+                                                                </Select>
+                                                            ) : null}
+                                                        </TableCell>
+                                                        <TableCell>
+                                                            {sel ? (
+                                                                <TextField
+                                                                    size="small"
+                                                                    type="number"
+                                                                    inputProps={{ min: 1, style: { width: 60 } }}
+                                                                    value={sel.priority}
+                                                                    onChange={evt => {
+                                                                        const v = Number(evt.target.value);
+                                                                        setSelectedMetrics(selectedMetrics.map(m =>
+                                                                            m.id === metric ? { ...m, priority: v } : m
+                                                                        ));
+                                                                    }}
+                                                                />
+                                                            ) : null}
+                                                        </TableCell>
+                                                    </TableRow>
+                                                );
+                                            })}
+                                        </TableBody>
+                                    </Table>
+                                </TableContainer>
+                            </Box>
+                            <Box mt={1}>
+                                <Typography variant="subtitle2">
+                                    Ranking by:&nbsp;
+                                    {selectedMetrics.map(m =>
+                                        `${metricLabels[m.id] || m.id} [${m.objective === 1 ? 'Maximize' : 'Minimize'}, Priority: ${m.priority}]`
+                                    ).join(', ')}
+                                </Typography>
+                            </Box></>
+                    )}
+
+
                 </>
             )}
 
@@ -779,7 +1026,7 @@ SELECT count(*) AS cluster_size, list(SYSTEMID) AS cluster_implementations, * EX
                                 Total number of killed mutants: <b>{mutantsKilled}</b>
                             </Typography>
                             <Typography variant="body2">
-                                Mutation Score: <b>{mutantsKilled / mutants.length}</b>
+                                Mutation score: <b>{mutantsKilled / mutants.length}</b>
                             </Typography>
                         </Box>
                     )}
@@ -808,6 +1055,43 @@ SELECT count(*) AS cluster_size, list(SYSTEMID) AS cluster_implementations, * EX
                                     return clusters.flatMap(cluster => {
                                         return parseDuckDBList(cluster.cluster_implementations);
                                     }).length;
+                                })()
+                            }</b>
+                        </Typography>
+                        <Typography variant="body2">
+                            Total number of majority code modules: <b>{
+                                (() => {
+                                    return clusters.slice(0, 1).flatMap(cluster => {
+                                        return parseDuckDBList(cluster.cluster_implementations);
+                                    }).length;
+                                })()
+                            }</b>
+                        </Typography>
+                        <Typography variant="body2">
+                            Total number of deviant code modules: <b>{
+                                (() => {
+                                    if (clusters.length < 1) {
+                                        return 0;
+                                    }
+
+                                    return clusters.slice(1, clusters.length).flatMap(cluster => {
+                                        return parseDuckDBList(cluster.cluster_implementations);
+                                    }).length;
+                                })()
+                            }</b>
+                        </Typography>
+                        <Typography variant="body2">
+                            Deviant (code module) score: <b>{
+                                (() => {
+                                    if (clusters.length < 1) {
+                                        return 0;
+                                    }
+
+                                    return (clusters.slice(1, clusters.length).flatMap(cluster => {
+                                        return parseDuckDBList(cluster.cluster_implementations);
+                                    }).length / clusters.flatMap(cluster => {
+                                        return parseDuckDBList(cluster.cluster_implementations);
+                                    }).length);
                                 })()
                             }</b>
                         </Typography>
@@ -850,8 +1134,8 @@ SELECT count(*) AS cluster_size, list(SYSTEMID) AS cluster_implementations, * EX
                                                             cand = undefined;
                                                         }
                                                         const label = [
-                                                            (cand && cand.name) ? cand.name : impl.id," (",
-                                                            impl.variantId,", ",
+                                                            (cand && cand.name) ? cand.name : impl.id, " (",
+                                                            impl.variantId, ", ",
                                                             impl.adapterId, ")"
                                                         ].filter(Boolean).join("");
                                                         return (
@@ -915,7 +1199,11 @@ SELECT count(*) AS cluster_size, list(SYSTEMID) AS cluster_implementations, * EX
                     </IconButton>
                 </DialogTitle>
                 <DialogContent>
-                    {openImpl && openImpl.id != "oracle" && <CodeSnippetCard snippet={getCodeCandidate(openImpl?.id)} />}
+                    <Stack>
+                        {openImpl && openImpl.variantId.startsWith("mutant") && <><MutationTable data={getMutantDetails(openImpl)} /><br /></>}
+                        {openImpl && openImpl.id != "oracle" && <CodeSnippetCard snippet={getCodeCandidate(openImpl?.id)} />}
+                    </Stack>
+
                 </DialogContent>
             </Dialog>
 

@@ -104,7 +104,7 @@ export const CodeSnippetCard: React.FC<CodeSnippetProps> = ({ snippet }) => (
 
             <CodeBlock
                 language="java">
-                {snippet.lql}
+                {snippet.lql ? snippet.lql : "n/a"}
             </CodeBlock>
 
             {/* Basic software metrics */}
@@ -131,8 +131,8 @@ export const CodeSnippetCard: React.FC<CodeSnippetProps> = ({ snippet }) => (
                 overflow: "auto"
             }}>
             <CodeBlock
-                language="java">
-                {snippet.content}
+                language="java" showLineNumbers={true}>
+                {snippet.content ? snippet.content : "n/a"}
             </CodeBlock>
             </Box>
 

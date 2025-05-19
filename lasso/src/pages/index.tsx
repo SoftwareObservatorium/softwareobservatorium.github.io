@@ -15,6 +15,7 @@ import CardImage from '../components/SimpleCard/CardImage';
 import CodeBlock from '@theme/CodeBlock';
 
 import CookieConsent from "react-cookie-consent";
+import RecentPosts from '../components/Blog/blog';
 
 function HomepageHeader() {
   const { siteConfig } = useDocusaurusContext();
@@ -64,8 +65,8 @@ function HomepageHeader() {
 
 // You can customize this value
 const featuredSearchUrl = 'lasso/result?executionId=69184769-d4c2-43d0-a101-987e5c30d674';
-const featuredSearchTitle = 'LSL Study Pipelines in Action';
-const featuredSearchDesc = 'Explore LSL pipeline results';
+const featuredSearchTitle = 'See LSL Study Pipelines in Action';
+const featuredSearchDesc = 'Go to TDSEHub, or Search/Generate Code';
 
 export default function Home(): JSX.Element {
   const { siteConfig } = useDocusaurusContext();
@@ -86,7 +87,7 @@ export default function Home(): JSX.Element {
           <div className="featured-search-card margin-top--lg margin-bottom--lg">
             <div className="featured-search-card-header">
 
-              Explore LSL Pipelines in TDSE Hub
+              Explore LSL Pipelines
             </div>
             <div className="featured-search-card-body">
               <div className="featured-search-title">{featuredSearchTitle}</div>
@@ -96,8 +97,24 @@ export default function Home(): JSX.Element {
                 href={"hub"}
 
                 rel="noopener noreferrer"
+                style={{ marginTop: "1em", marginRight: "1em" }}>
+                TDSEHub
+              </a>
+              <a
+                className="button button--primary"
+                href={"search"}
+
+                rel="noopener noreferrer"
+                style={{ marginTop: "1em", marginRight: "1em" }}>
+                Search
+              </a>
+              <a
+                className="button button--primary"
+                href={"generation"}
+
+                rel="noopener noreferrer"
                 style={{ marginTop: "1em" }}>
-                Open Hub
+                Generate
               </a>
             </div>
           </div>
@@ -143,30 +160,7 @@ export default function Home(): JSX.Element {
           {/* --- End eye-catcher --- */}
         </section>
 
-        <section>
-          <div className="container padding--sm">
-            <div className="text--center">
-              <Heading as="h2">News</Heading>
-            </div>
-            <div className="row margin--lg padding--lg shadow--md">
-              <div className={clsx('col col--10 col--offset-1')}>
-
-                <div className="container">
-                  <div className="row">
-                    <ul>
-                      {recentPosts.items.slice(0, 3).map((item, index) => (
-                        <li key={index}>
-                          <a href={`${item.permalink}`}>{item.title}</a>{" "}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                </div>
-
-              </div>
-            </div>
-          </div>
-        </section>
+        <RecentPosts recentPosts={recentPosts} />
 
         <section>
           <div className="container padding--sm">

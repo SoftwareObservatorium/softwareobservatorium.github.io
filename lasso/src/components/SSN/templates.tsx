@@ -111,13 +111,13 @@ study(name: 'GenChatGPT') {
         // action configuration block
         apiKey = "demo" // see https://docs.langchain4j.dev/integrations/language-models/open-ai/
         model = "gpt-4o-mini"
-        samples = 1
+        samples = {{SAMPLES}}
 
         // custom DSL command offered by the action (for each stimulus matrix, create one prompt to obtain impls)
         prompt { stimulusMatrix ->
             // can by for any prompts: FA, impls, models etc.
             def prompt = [:] // create prompt model
-            prompt.promptContent = """implement a java class with the following interface specification, but do not inherit a java interface: \`\`\`\${stimulusMatrix.lql}\`\`\`. Only output the java class and nothing else."""
+            prompt.promptContent = """{{CODE_PROMPT}}"""
             prompt.id = "lql_prompt"
             return [prompt] // list of prompts is expected
         }
@@ -165,7 +165,7 @@ study(name: 'GenChatGPT') {
         prompt { stimulusMatrix ->
             // can by for any prompts: FA, impls, models etc.
             def prompt = [:] // create prompt model
-            prompt.promptContent = """implement a java class with the following interface specification, but do not inherit a java interface: \`\`\`\${stimulusMatrix.lql}\`\`\`. Only output the java class and nothing else."""
+            prompt.promptContent = """{{CODE_PROMPT}}"""
             prompt.id = "lql_prompt"
             return [prompt] // list of prompts is expected
         }
@@ -184,7 +184,7 @@ study(name: 'GenChatGPT') {
 
         prompt { stimulusMatrix ->
             def prompt = [:] // create prompt model
-            prompt.promptContent = """generate a junit test class to test the functionality of the following interface specification: \`\`\`\${stimulusMatrix.lql}\`\`\`. Assume that the specification is encapsulated in a class that uses the same naming as in the interface specification. Only output the JUnit test class and nothing else."""
+            prompt.promptContent = """{{TEST_PROMPT}}"""
             prompt.id = "lql_prompt"
             return [prompt] // list of prompts is expected
         }
@@ -233,7 +233,7 @@ study(name: 'GenOllama') {
         prompt { stimulusMatrix ->
             // can by for any prompts: FA, impls, models etc.
             def prompt = [:] // create prompt model
-            prompt.promptContent = """implement a java class with the following interface specification, but do not inherit a java interface: \`\`\`\${stimulusMatrix.lql}\`\`\`. Only output the java class and nothing else."""
+            prompt.promptContent = """{{CODE_PROMPT}}"""
             prompt.id = "lql_prompt"
             return [prompt] // list of prompts is expected
         }
@@ -282,7 +282,7 @@ study(name: 'GenOllama') {
         prompt { stimulusMatrix ->
             // can by for any prompts: FA, impls, models etc.
             def prompt = [:] // create prompt model
-            prompt.promptContent = """implement a java class with the following interface specification, but do not inherit a java interface: \`\`\`\${stimulusMatrix.lql}\`\`\`. Only output the java class and nothing else."""
+            prompt.promptContent = """{{CODE_PROMPT}}"""
             prompt.id = "lql_prompt"
             return [prompt] // list of prompts is expected
         }
@@ -301,7 +301,7 @@ study(name: 'GenOllama') {
 
         prompt { stimulusMatrix ->
             def prompt = [:] // create prompt model
-            prompt.promptContent = """generate a junit test class to test the functionality of the following interface specification: \`\`\`\${stimulusMatrix.lql}\`\`\`. Assume that the specification is encapsulated in a class that uses the same naming as in the interface specification. Only output the JUnit test class and nothing else."""
+            prompt.promptContent = """{{TEST_PROMPT}}"""
             prompt.id = "lql_prompt"
             return [prompt] // list of prompts is expected
         }
@@ -358,7 +358,7 @@ study(name: 'EvoSuiteGenChatGPT') {
         prompt { stimulusMatrix ->
             // can by for any prompts: FA, impls, models etc.
             def prompt = [:] // create prompt model
-            prompt.promptContent = """implement a java class with the following interface specification, but do not inherit a java interface: \`\`\`\${stimulusMatrix.lql}\`\`\`. Only output the java class and nothing else."""
+            prompt.promptContent = """{{CODE_PROMPT}}"""
             prompt.id = "lql_prompt"
             return [prompt] // list of prompts is expected
         }
@@ -366,7 +366,7 @@ study(name: 'EvoSuiteGenChatGPT') {
 
     // add tests: SBST
     action(name: 'evoSuite', type: 'EvoSuite') {
-        searchBudget = 60 // we need this as upper bound for timeouts
+        searchBudget = {{EVOSUITE_BUDGET}} // we need this as upper bound for timeouts
         stoppingCondition = "MaxTime"
 
         dependsOn 'generateCodeGpt'
@@ -426,7 +426,7 @@ study(name: 'EvoSuiteGenOllama') {
         prompt { stimulusMatrix ->
             // can by for any prompts: FA, impls, models etc.
             def prompt = [:] // create prompt model
-            prompt.promptContent = """implement a java class with the following interface specification, but do not inherit a java interface: \`\`\`\${stimulusMatrix.lql}\`\`\`. Only output the java class and nothing else."""
+            prompt.promptContent = """{{CODE_PROMPT}}"""
             prompt.id = "lql_prompt"
             return [prompt] // list of prompts is expected
         }
@@ -434,7 +434,7 @@ study(name: 'EvoSuiteGenOllama') {
 
     // add tests: SBST
     action(name: 'evoSuite', type: 'EvoSuite') {
-        searchBudget = 60 // we need this as upper bound for timeouts
+        searchBudget = {{EVOSUITE_BUDGET}} // we need this as upper bound for timeouts
         stoppingCondition = "MaxTime"
 
         dependsOn 'generateCodeLlama'
@@ -502,6 +502,11 @@ export const TGS_PLACEHOLDER_DEFAULTS: {
             default: "1",
             description: "The number of code modules to generate"
         },
+        CODE_PROMPT: {
+            label: "Code Prompt",
+            default: "implement a java class with the following interface specification, but do not inherit a java interface: ```${stimulusMatrix.lql}```. Only output the java class and nothing else.",
+            description: "The prompt to use to generate code"
+        }
     },
     ChatGPTGenerateTests: {
         CODE_SAMPLES: {
@@ -514,6 +519,33 @@ export const TGS_PLACEHOLDER_DEFAULTS: {
             default: "1",
             description: "The number of test (classes) to generate"
         },
+        CODE_PROMPT: {
+            label: "Code Prompt",
+            default: "implement a java class with the following interface specification, but do not inherit a java interface: ```${stimulusMatrix.lql}```. Only output the java class and nothing else.",
+            description: "The prompt to use to generate code"
+        },
+        TEST_PROMPT: {
+            label: "Test Prompt",
+            default: "generate a junit test class to test the functionality of the following interface specification: ```${stimulusMatrix.lql}```. Assume that the specification is encapsulated in a class that uses the same naming as in the interface specification. Only output the JUnit test class and nothing else.",
+            description: "The prompt to use to generate tests"
+        }
+    },
+    ChatGPTEvoSuite: {
+        CODE_SAMPLES: {
+            label: "Number of Code Modules",
+            default: "1",
+            description: "The number of code modules to generate"
+        },
+        CODE_PROMPT: {
+            label: "Code Prompt",
+            default: "implement a java class with the following interface specification, but do not inherit a java interface: ```${stimulusMatrix.lql}```. Only output the java class and nothing else.",
+            description: "The prompt to use to generate code"
+        },
+        EVOSUITE_BUDGET: {
+            label: "EvoSuite Time Budget",
+            default: "120",
+            description: "EvoSuite Time Budget in Seconds"
+        }
     },
     Ollama: {
         MODEL: {
@@ -526,6 +558,16 @@ export const TGS_PLACEHOLDER_DEFAULTS: {
             default: "1",
             description: "The number of code modules to generate"
         },
+        CODE_PROMPT: {
+            label: "Code Prompt",
+            default: "implement a java class with the following interface specification, but do not inherit a java interface: ```${stimulusMatrix.lql}```. Only output the java class and nothing else.",
+            description: "The prompt to use to generate code"
+        },
+        TEST_PROMPT: {
+            label: "Test Prompt",
+            default: "generate a junit test class to test the functionality of the following interface specification: ```${stimulusMatrix.lql}```. Assume that the specification is encapsulated in a class that uses the same naming as in the interface specification. Only output the JUnit test class and nothing else.",
+            description: "The prompt to use to generate tests"
+        }
     },
     OllamaGenerateTests: {
         CODE_MODEL: {
@@ -548,6 +590,16 @@ export const TGS_PLACEHOLDER_DEFAULTS: {
             default: "1",
             description: "The number of test (classes) to generate"
         },
+        CODE_PROMPT: {
+            label: "Code Prompt",
+            default: "implement a java class with the following interface specification, but do not inherit a java interface: ```${stimulusMatrix.lql}```. Only output the java class and nothing else.",
+            description: "The prompt to use to generate code"
+        },
+        TEST_PROMPT: {
+            label: "Test Prompt",
+            default: "generate a junit test class to test the functionality of the following interface specification: ```${stimulusMatrix.lql}```. Assume that the specification is encapsulated in a class that uses the same naming as in the interface specification. Only output the JUnit test class and nothing else.",
+            description: "The prompt to use to generate tests"
+        }
     },
     OllamaEvoSuite: {
         CODE_MODEL: {
@@ -559,15 +611,18 @@ export const TGS_PLACEHOLDER_DEFAULTS: {
             label: "Number of Code Modules",
             default: "1",
             description: "The number of code modules to generate"
-        }
-    },
-    ChatGPTEvoSuite: {
-        CODE_SAMPLES: {
-            label: "Number of Code Modules",
-            default: "1",
-            description: "The number of code modules to generate"
         },
-    },
+        CODE_PROMPT: {
+            label: "Code Prompt",
+            default: "implement a java class with the following interface specification, but do not inherit a java interface: ```${stimulusMatrix.lql}```. Only output the java class and nothing else.",
+            description: "The prompt to use to generate code"
+        },
+        EVOSUITE_BUDGET: {
+            label: "EvoSuite Time Budget",
+            default: "120",
+            description: "EvoSuite Time Budget in Seconds"
+        }
+    }
 };
 
 export const TDSTemplates = {

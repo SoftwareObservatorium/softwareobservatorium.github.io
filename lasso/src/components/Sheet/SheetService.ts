@@ -23,7 +23,9 @@ function loadSheetJsonl(jsonl: any) {
             //console.log(`Property: ${key}, Value: ${row.cells[key]}`);
 
             let myVal = row.cells[key];
-            if (myVal.toString() == "[object Object]") {
+            if(!myVal) {
+                myVal = "null";
+            } else if (myVal.toString() == "[object Object]") {
                 myVal = "";
             }
 

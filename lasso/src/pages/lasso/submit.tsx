@@ -1,21 +1,19 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 
 import Layout from '@theme/Layout';
 import Head from '@docusaurus/Head';
-import { Button, Card, CardActions, CardContent, Divider, Tabs, Typography } from '@mui/material';
-import { HubExamples } from '../../components/HubFeatures/HubFeatures';
+import { Button, CardActions, CardContent, CircularProgress, Divider, Tabs, Typography } from '@mui/material';
 import { Editor } from '@monaco-editor/react';
 
 import Box from '@mui/material/Box';
 import Tab from '@mui/material/Tab';
 
 import Grid from '@mui/material/Grid2';
-import SrmViewer from '../../components/SrmViewer';
-import GraphComponent from '../../components/Graph/graph';
-import { LslRequest, LslResponse } from '@site/src/services/models';
+import { LslRequest, LslResponse, ScriptInfo } from '@site/src/services/models';
 import LassoService from '@site/src/services/LassoService';
 import AuthService from '@site/src/services/AuthService';
 import { useHistory, useLocation } from '@docusaurus/router';
+import GraphComponent from '@site/src/components/Graph/graph';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -56,9 +54,12 @@ const SubmitPage = () => {
   const location = useLocation()
   const history = useHistory()
 
-  const [currentExampleId, setCurrentExampleId] = useState(location.search.split('=')[1])
+  const [executionId, setExecutionId] = useState(location.search.split('=')[1])
+  const [scriptInfo, setScriptInfo] = useState<ScriptInfo | null>(null);
 
-  const [lsl, setLsl] = useState("")
+
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = () => {
     let lslRequest = new LslRequest()
@@ -117,14 +118,23 @@ const SubmitPage = () => {
   const editorRef = useRef<any>(null);
   const monacoRef = useRef<any>(null);
 
-  function handleEditorDidMount(editor: any, monaco: any) {
+  async function handleEditorDidMount(editor: any, monaco: any) {
     monaco.languages.register({ id: 'java' });
 
     monacoRef.current = monaco;
     editorRef.current = editor;
 
-    if (editorRef.current && editorRef.current.getModel() && currentExampleId) {
-      editorRef.current.getModel().setValue(HubExamples.MAP[currentExampleId].lsl);
+    if (executionId) {
+      await LassoService.getScriptJobStatus(executionId)
+        .then(res => {
+          const scriptInfo: ScriptInfo = res.data;
+          setScriptInfo(scriptInfo);
+
+          editorRef.current.getModel().setValue(scriptInfo.content);
+
+        })
+        .catch(err => setError(err.message ?? String(err)))
+        .finally(() => setLoading(false));
     } else {
       editorRef.current.getModel().setValue("");
     }
@@ -138,14 +148,17 @@ const SubmitPage = () => {
       </Head>
 
       <Typography sx={{ margin: 2 }} variant="h5" component="div">Editor<Typography variant="h6" component="div">Write and Submit a LSL Script to the Public LASSO Demo Platform</Typography>
-      
-      {currentExampleId ?
-            <Typography variant="body2">
-            Example '{HubExamples.MAP[currentExampleId].label}': {HubExamples.MAP[currentExampleId].description}
-          </Typography>
-    :null}
-      
+
       </Typography>
+
+      {loading && (
+        <Box sx={{ display: "flex", justifyContent: "center", py: 5 }}>
+          <CircularProgress />
+        </Box>
+      )}
+      {error && (
+        <Typography color="error" align="center">{error}</Typography>
+      )}
 
       <Grid container spacing={2}>
         <Grid size={12}>
@@ -163,7 +176,7 @@ const SubmitPage = () => {
                   <Editor
                     height="500px"
                     defaultLanguage="java"
-                    defaultValue={lsl}
+                    defaultValue={"loading ..."}
                     onMount={handleEditorDidMount} />
                 </Typography>
                 <Button sx={{ float: "left" }} onClick={(event) => handleSubmit()}>Submit</Button>
@@ -173,7 +186,7 @@ const SubmitPage = () => {
             </CustomTabPanel>
             {/* <CustomTabPanel value={value} index={1}>
               <Typography variant="h5" component="div">
-                <GraphComponent exampleId={currentExampleId} />
+                <GraphComponent code={scriptInfo.content} />
               </Typography>
             </CustomTabPanel> */}
           </Box>

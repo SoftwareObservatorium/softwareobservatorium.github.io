@@ -24,7 +24,8 @@ import {
     DialogContent,
     IconButton,
     TextField,
-    TableContainer
+    TableContainer,
+    Button
 } from '@mui/material';
 import * as duckdb from '@duckdb/duckdb-wasm';
 import axios from 'axios';
@@ -123,6 +124,7 @@ export const ClusteredSRMAccordionViewer: React.FC<any> = ({
     // ----------- DIALOG STATES -----------
     const [openTestCase, setOpenTestCase] = useState<any | null>(null);
     const [openImpl, setOpenImpl] = useState<CodeVersion | null>(null);
+    const [openRankingCriteria, setOpenRankingCriteria] = useState<any | null>(null);
 
     const dbRef = useRef<duckdb.AsyncDuckDB>();
     const isParquetLoaded = useRef(false);
@@ -866,85 +868,13 @@ SELECT count(*) AS cluster_size, list(SYSTEMID) AS cluster_implementations, * EX
                     />
 
                     {metrics && metrics.length > 0 && (
-                        <>                     <Divider></Divider>
+                        <>
                             <Box mt={1}>
-                                <Typography mt={1}>Ranking Criteria for Subclustering</Typography>
-                                <TableContainer sx={{ maxHeight: 200 }}>
-                                    <Table size="small" stickyHeader
-                                        sx={{
-                                            fontSize: '0.90em',
-                                            '& td, & th': { py: 0.5, px: 1 },
-                                        }}
-                                    >
-                                        <TableHead>
-                                            <TableRow>
-                                                <TableCell>Use</TableCell>
-                                                <TableCell>Metric</TableCell>
-                                                <TableCell>Objective</TableCell>
-                                                <TableCell>Priority (1=highest)</TableCell>
-                                            </TableRow>
-                                        </TableHead>
-                                        <TableBody>
-                                            {metrics.map(metric => {
-                                                const selIdx = selectedMetrics.findIndex(m => m.id === metric);
-                                                const sel = selectedMetrics[selIdx];
-                                                return (
-                                                    <TableRow key={metric}>
-                                                        <TableCell>
-                                                            <Checkbox
-                                                                checked={!!sel}
-                                                                onChange={e => {
-                                                                    if (e.target.checked) {
-                                                                        setSelectedMetrics([
-                                                                            ...selectedMetrics,
-                                                                            { id: metric, objective: 0, priority: selectedMetrics.length + 1 }
-                                                                        ]);
-                                                                    } else {
-                                                                        setSelectedMetrics(selectedMetrics.filter(m => m.id !== metric));
-                                                                    }
-                                                                }}
-                                                            />
-                                                        </TableCell>
-                                                        <TableCell>{metricLabels[metric] || metric}</TableCell>
-                                                        <TableCell>
-                                                            {sel ? (
-                                                                <Select
-                                                                    size="small"
-                                                                    value={sel.objective}
-                                                                    onChange={evt => {
-                                                                        const v = Number(evt.target.value) as 0 | 1;
-                                                                        setSelectedMetrics(selectedMetrics.map(m =>
-                                                                            m.id === metric ? { ...m, objective: v } : m
-                                                                        ));
-                                                                    }}
-                                                                >
-                                                                    <MenuItem value={0}>Minimize</MenuItem>
-                                                                    <MenuItem value={1}>Maximize</MenuItem>
-                                                                </Select>
-                                                            ) : null}
-                                                        </TableCell>
-                                                        <TableCell>
-                                                            {sel ? (
-                                                                <TextField
-                                                                    size="small"
-                                                                    type="number"
-                                                                    inputProps={{ min: 1, style: { width: 60 } }}
-                                                                    value={sel.priority}
-                                                                    onChange={evt => {
-                                                                        const v = Number(evt.target.value);
-                                                                        setSelectedMetrics(selectedMetrics.map(m =>
-                                                                            m.id === metric ? { ...m, priority: v } : m
-                                                                        ));
-                                                                    }}
-                                                                />
-                                                            ) : null}
-                                                        </TableCell>
-                                                    </TableRow>
-                                                );
-                                            })}
-                                        </TableBody>
-                                    </Table>
-                                </TableContainer>
+
+
+                                <Button variant="outlined" onClick={(e) => setOpenRankingCriteria("edit")}>Edit Ranking Criteria (to sub-cluster)</Button>
+
+
                             </Box>
                             <Box mt={1}>
                                 <Typography variant="subtitle2">
@@ -964,13 +894,13 @@ SELECT count(*) AS cluster_size, list(SYSTEMID) AS cluster_implementations, * EX
             {gridRows.length > 0 && (
                 <Box sx={{ width: '100%', mb: 3 }}>
                     <Typography variant="h6" gutterBottom>Clustered Output SRM</Typography>
-                    <Typography variant="subtitle2" mb={1}>
+                    {/* <Typography variant="subtitle2" mb={1}>
                         <b>Legend</b><br />
                         <span>
                             <strong>Columns:</strong> Implementations (colored by cluster, tagged below if "oracle" or part of cluster-based oracle)<br />
                             <strong>Rows:</strong> Test Invocations (statement), grouped by test case
                         </span>
-                    </Typography>
+                    </Typography> */}
                     <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 2 }}>
                         <Chip size="small" color="success" label="cluster-based oracle" />
                         <Chip size="small" color="info" label="specified oracle" />
@@ -1204,6 +1134,93 @@ SELECT count(*) AS cluster_size, list(SYSTEMID) AS cluster_implementations, * EX
                         {openImpl && openImpl.id != "oracle" && <CodeSnippetCard snippet={getCodeCandidate(openImpl?.id)} />}
                     </Stack>
 
+                </DialogContent>
+            </Dialog>
+
+            <Dialog open={!!openRankingCriteria} onClose={() => setOpenRankingCriteria(null)} maxWidth="md" fullWidth>
+                <DialogTitle>
+                    Ranking Criteria
+                    <IconButton aria-label="close" onClick={() => setOpenRankingCriteria(null)} sx={{ position: 'absolute', right: 8, top: 8 }}>
+                        <CloseIcon />
+                    </IconButton>
+                </DialogTitle>
+                <DialogContent>
+                    <TableContainer sx={{ maxHeight: 200 }}>
+                        <Table size="small" stickyHeader
+                            sx={{
+                                fontSize: '0.90em',
+                                '& td, & th': { py: 0.5, px: 1 },
+                            }}
+                        >
+                            <TableHead>
+                                <TableRow>
+                                    <TableCell>Use</TableCell>
+                                    <TableCell>Metric</TableCell>
+                                    <TableCell>Objective</TableCell>
+                                    <TableCell>Priority (1=highest)</TableCell>
+                                </TableRow>
+                            </TableHead>
+                            <TableBody>
+                                {metrics.map(metric => {
+                                    const selIdx = selectedMetrics.findIndex(m => m.id === metric);
+                                    const sel = selectedMetrics[selIdx];
+                                    return (
+                                        <TableRow key={metric}>
+                                            <TableCell>
+                                                <Checkbox
+                                                    checked={!!sel}
+                                                    onChange={e => {
+                                                        if (e.target.checked) {
+                                                            setSelectedMetrics([
+                                                                ...selectedMetrics,
+                                                                { id: metric, objective: 0, priority: selectedMetrics.length + 1 }
+                                                            ]);
+                                                        } else {
+                                                            setSelectedMetrics(selectedMetrics.filter(m => m.id !== metric));
+                                                        }
+                                                    }}
+                                                />
+                                            </TableCell>
+                                            <TableCell>{metricLabels[metric] || metric}</TableCell>
+                                            <TableCell>
+                                                {sel ? (
+                                                    <Select
+                                                        size="small"
+                                                        value={sel.objective}
+                                                        onChange={evt => {
+                                                            const v = Number(evt.target.value) as 0 | 1;
+                                                            setSelectedMetrics(selectedMetrics.map(m =>
+                                                                m.id === metric ? { ...m, objective: v } : m
+                                                            ));
+                                                        }}
+                                                    >
+                                                        <MenuItem value={0}>Minimize</MenuItem>
+                                                        <MenuItem value={1}>Maximize</MenuItem>
+                                                    </Select>
+                                                ) : null}
+                                            </TableCell>
+                                            <TableCell>
+                                                {sel ? (
+                                                    <TextField
+                                                        size="small"
+                                                        type="number"
+                                                        inputProps={{ min: 1, style: { width: 60 } }}
+                                                        value={sel.priority}
+                                                        onChange={evt => {
+                                                            const v = Number(evt.target.value);
+                                                            setSelectedMetrics(selectedMetrics.map(m =>
+                                                                m.id === metric ? { ...m, priority: v } : m
+                                                            ));
+                                                        }}
+                                                    />
+                                                ) : null}
+                                            </TableCell>
+                                        </TableRow>
+                                    );
+                                })}
+                            </TableBody>
+                        </Table>
+                    </TableContainer>
                 </DialogContent>
             </Dialog>
 

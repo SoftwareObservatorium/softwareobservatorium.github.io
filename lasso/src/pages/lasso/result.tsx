@@ -236,7 +236,7 @@ DRAFT
                     <Tab label="SRM Explorer" {...a11yProps(4)} />
                     : null}
                   {scriptInfo.status === "SUCCESSFUL" ?
-                    <Tab label="JupyterLab" {...a11yProps(5)} />
+                    <Tab label="Notebook (Interactive)" {...a11yProps(5)} />
                     : null}
                   {scriptInfo.status === "SUCCESSFUL" ?
                     <Tab label="Export" {...a11yProps(6)} />
@@ -351,8 +351,8 @@ DRAFT
                   </CustomTabPanel>
                   <CustomTabPanel value={value} index={5}>
                     <React.Fragment>
-                      <Typography variant="h6" component="div">Analyze SRM Data in Jupyter Lite (WASM powered Juyper running in the browser!)</Typography>
-                      <Typography component="div">(note: you can also download the Notebook and run it in your local Juypter environment)</Typography>
+                      <Typography variant="h6" component="div">Analyze SRM Data in Jupyter Lite (WASM powered Juyper running in the browser)</Typography>
+                      <Typography component="div">(note: you can also download the Notebook and run it in your local Juypter environment or Google Colab etc.)</Typography>
                       {/* <br />
                       <p><Link target="_blank" href={`${LassoService.API_URL}notebooks/lab/index.html?fromURL=${LassoService.API_URL}publicapi/v1/lasso/analytics/srm/${scriptInfo.executionId}.ipynb`}>Open Notebook</Link></p> */}
 

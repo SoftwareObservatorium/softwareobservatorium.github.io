@@ -18,7 +18,6 @@ import CookieConsent from "react-cookie-consent";
 
 function HomepageHeader() {
   const { siteConfig } = useDocusaurusContext();
-  const recentPosts = require("../../.docusaurus/docusaurus-plugin-content-blog/default/blog-post-list-prop-default.json");
 
   return (
     <header className={clsx('hero', styles.heroBanner)}>
@@ -56,39 +55,7 @@ function HomepageHeader() {
               </div>
             </div>
           </div>
-          <div className="col col--4">
-            <div className="container padding--sm">
-              <Card shadow='tl' >
-                <CardHeader style={{ backgroundColor: '#ffffff', color: 'black' }} className='text--center'>
-                  <h3>Recent Blog Posts</h3>
-                </CardHeader>
 
-                <CardBody style={{ backgroundColor: '#ffffff', color: 'black' }} className='text--center'>
-                  <div className="container">
-                    <div className="row">
-                      <ul>
-                        {recentPosts.items.slice(0, 3).map((item, index) => (
-                          <li key={index}>
-                            <a href={`${item.permalink}`}>{item.title}</a>{" "}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  </div>
-                </CardBody>
-
-
-                <CardFooter style={{ backgroundColor: '#ffffff', color: 'black' }} className='text--center'>
-                  <Link
-                    className="button button--secondary"
-                    to="/blog">
-                    All Posts
-                  </Link>
-                </CardFooter>
-
-              </Card>
-            </div>
-          </div>
         </div>
       </div>
     </header>
@@ -103,84 +70,38 @@ const featuredSearchDesc = 'Explore LSL pipeline results';
 export default function Home(): JSX.Element {
   const { siteConfig } = useDocusaurusContext();
 
+  const recentPosts = require("../../.docusaurus/docusaurus-plugin-content-blog/default/blog-post-list-prop-default.json");
+
+
   return (
     <Layout
       title={`${siteConfig.title}`}
       description="LASSO Project">
       <HomepageHeader />
       <main>
-        <section className={clsx(styles.screenshotcontents)}>
-          <div className="container padding--sm">
-            <div className="row">
-              <div className="col col--4 padding--sm text--center">
-                {/* <Card shadow='tl' >
-                <CardImage cardImageUrl="img/screens/quickstart_results.png" className="" alt={''} title={''} />
-              </Card> */}
-                <a target="_blank" href="img/screens/quickstart_results.png"><img className={clsx(styles.screenshot)} src="img/screens/quickstart_results.png"></img></a>
-              </div>
-              <div className="col col--4 padding--sm text--center">
-                {/* <Card shadow='tl' >
-                <CardImage cardImageUrl="img/screens/quickstart_results_filters.png" className="" alt={''} title={''} />
-              </Card> */}
-                <a target="_blank" href="img/screens/quickstart_results_filters.png"><img className={clsx(styles.screenshot)} src="img/screens/quickstart_results_filters.png"></img></a>
-              </div>
-              <div className="col col--4 padding--sm text--center">
-                {/* <Card shadow='tl' >
-                <CardImage cardImageUrl="img/screens/quickstart_jupyterlab.png" className="" alt={''} title={''} />
-              </Card> */}
-                <a target="_blank" href="img/screens/quickstart_jupyterlab.png"><img className={clsx(styles.screenshot)} src="img/screens/quickstart_jupyterlab.png"></img></a>
-              </div>
-
-
-            </div>
-          </div>
-
-        </section>
 
         <section>
-          <div className="container padding--sm">
-            <div className="text--center">
-              <Heading as="h2">Try LASSO in 5 Minutes</Heading>
+
+          {/* --- "Eye-catcher" Card Section --- */}
+          <div className="featured-search-card margin-top--lg margin-bottom--lg">
+            <div className="featured-search-card-header">
+
+              Explore LSL Pipelines in TDSE Hub
             </div>
-            <div className="row margin--lg padding--lg shadow--md">
-              <div className={clsx('col col--10 col--offset-1')}>
-                <p>
-                  To get started, run the following two commands in a local directory on your machine (requires{' '}
-                  <a href="https://docs.docker.com/compose/">docker compose</a>):
-                </p>
-                <div className="codeBlockWrapper">
-                  <CodeBlock language="bash">
-                    {`curl https://raw.githubusercontent.com/SoftwareObservatorium/lasso/refs/heads/develop/docker/compose/docker-compose-embedded.yml -o docker-compose.yml
-docker compose up`}
-                  </CodeBlock>
-                </div>
-                <p>
-                  Wait until all services started (LASSO platform, Code Search Index and Artifact Repository) and then open LASSO's dashboard at{' '}
-                  <a href="http://localhost:10222/webui/">http://localhost:10222/webui/</a> (login: admin / admin123).
-                  See <a href="./docs/quickstart/scenario">5 Minute Tutorial</a> for details, and{' '}
-                  <a href="./labs">Labs (Playground)</a> for more options.
-                </p>
+            <div className="featured-search-card-body">
+              <div className="featured-search-title">{featuredSearchTitle}</div>
+              <div className="featured-search-desc">{featuredSearchDesc}</div>
+              <a
+                className="button button--primary"
+                href={"hub"}
 
-                {/* --- "Eye-catcher" Card Section --- */}
-                <div className="featured-search-card margin-top--lg margin-bottom--lg">
-                  <div className="featured-search-card-header">
-
-                    Example Run
-                  </div>
-                  <div className="featured-search-card-body">
-                    <div className="featured-search-title">{featuredSearchTitle}</div>
-                    <div className="featured-search-desc">{featuredSearchDesc}</div>
-                    <a
-                      className="button button--primary"
-                      href={featuredSearchUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      style={{ marginTop: "1em" }}>
-                      View Pipeline Results
-                    </a>
-                  </div>
-                </div>
-                <style>{`
+                rel="noopener noreferrer"
+                style={{ marginTop: "1em" }}>
+                Open Hub
+              </a>
+            </div>
+          </div>
+          <style>{`
               .featured-search-card {
                 border: 2px solid #0075FF;
                 border-radius: 0.7em;
@@ -219,7 +140,59 @@ docker compose up`}
                 margin-bottom: 0.9em;
               }
             `}</style>
-                {/* --- End eye-catcher --- */}
+          {/* --- End eye-catcher --- */}
+        </section>
+
+        <section>
+          <div className="container padding--sm">
+            <div className="text--center">
+              <Heading as="h2">News</Heading>
+            </div>
+            <div className="row margin--lg padding--lg shadow--md">
+              <div className={clsx('col col--10 col--offset-1')}>
+
+                <div className="container">
+                  <div className="row">
+                    <ul>
+                      {recentPosts.items.slice(0, 3).map((item, index) => (
+                        <li key={index}>
+                          <a href={`${item.permalink}`}>{item.title}</a>{" "}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section>
+          <div className="container padding--sm">
+            <div className="text--center">
+              <Heading as="h2">Try LASSO in 5 Minutes</Heading>
+            </div>
+            <div className="row margin--lg padding--lg shadow--md">
+              <div className={clsx('col col--10 col--offset-1')}>
+                <p>
+                  To get started, run the following two commands in a local directory on your machine (requires{' '}
+                  <a href="https://docs.docker.com/compose/">docker compose</a>):
+                </p>
+                <div className="codeBlockWrapper">
+                  <CodeBlock language="bash">
+                    {`curl https://raw.githubusercontent.com/SoftwareObservatorium/lasso/refs/heads/develop/docker/compose/docker-compose-embedded.yml -o docker-compose.yml
+docker compose up`}
+                  </CodeBlock>
+                </div>
+                <p>
+                  Wait until all services started (LASSO platform, Code Search Index and Artifact Repository) and then open LASSO's dashboard at{' '}
+                  <a href="http://localhost:10222/webui/">http://localhost:10222/webui/</a> (login: admin / admin123).
+                  See <a href="./docs/quickstart/scenario">5 Minute Tutorial</a> for details, and{' '}
+                  <a href="./labs">Labs (Playground)</a> for more options.
+                </p>
+
+
 
               </div>
             </div>

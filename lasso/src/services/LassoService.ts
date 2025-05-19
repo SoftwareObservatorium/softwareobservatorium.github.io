@@ -2,8 +2,8 @@ import axios from "axios";
 import authHeader from "./authheader";
 import { LslRequest, RankRequest, SearchQueryRequest, SearchSrmQueryRequest } from "./models";
 
-//const API_URL = "https://odisse.informatik.uni-mannheim.de/";
-const API_URL = "http://localhost:10222/";
+const API_URL = "https://odisse.informatik.uni-mannheim.de/";
+//const API_URL = "http://localhost:10222/";
 
 const getProfile = () => {
   return axios.get(API_URL + "auth/me", { headers: authHeader() });
@@ -19,6 +19,18 @@ const rank = (request: RankRequest) => {
 
 const getScriptJobStatus = (executionId: string) => {
   return axios.get(`${API_URL}api/v1/lasso/scripts/${executionId}`, { headers: authHeader() });
+};
+
+const getHubScripts = () => {
+  return axios.get(`${API_URL}api/v1/lasso/hub`, { headers: authHeader() });
+};
+
+const getHubScriptsByUser = (user: string) => {
+  return axios.get(`${API_URL}api/v1/lasso/hub/user/${user}`, { headers: authHeader() });
+};
+
+const getHubScriptsByTag = (tag: string) => {
+  return axios.get(`${API_URL}api/v1/lasso/hub/tag/${tag}`, { headers: authHeader() });
 };
 
 const queryScript = (request: SearchSrmQueryRequest) => {
@@ -41,6 +53,9 @@ const queryImplementationsForDataSource = (dataSource: string, request: SearchQu
 const LassoService = {
     getProfile,
     execute,
+    getHubScripts,
+    getHubScriptsByUser,
+    getHubScriptsByTag,
     rank,
     getScriptJobStatus,
     queryScript,

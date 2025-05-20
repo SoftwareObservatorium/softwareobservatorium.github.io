@@ -2,7 +2,7 @@
 sidebar_position: 2
 ---
 
-# Stimulus Response Matrices
+# SRM - Stimulus Response Matrices
 
 Stimulus Response Matrices (SRMs) serve as configurations of tests and implementations, and Stimulus Response Hypercubes (SRHs) for software analytics of observed behavior.
 

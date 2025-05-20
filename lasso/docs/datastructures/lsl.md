@@ -19,7 +19,7 @@ The LSL domain-specific language involves these top-level and recurring commands
 | `dependsOn` | Declares dependencies between actions (order of execution; i.e., one action depends on the completion of another) |
 | `include` | Specifies which stimulus (response) matrices (SRMs) to process in an action (`*` or by name) |
 | `execute` | Block inside `action` for actual task logic (e.g., stimulus matrix creation), or to perform computations |
-| `stimulusMatrix` | Defines an interface specification of a functional abstraction (abstract system under test), a set of candidate implementations, and associated tests |
+| `stimulusMatrix` | Defines an interface specification ([LQL notation](lql)) of a functional abstraction (abstract system under test), a set of candidate implementations, and associated tests |
 | `test` | Declares a test for an interface/implementation. Contains rows describing invocation sequences. |
 | `row` | Specifies a step in a test scenario (expected output, operation, object reference, input args) |
 | `implementation` | Declares a particular implementation of an abstraction/interface. Defines concrete implementation candidates by id, class, and optionally artifact coordinates. |
@@ -309,7 +309,7 @@ stimulusMatrix(<matrixName>, <LQL-Spec>, <implementations list>, <tests list>)
 
 Fields:
 - Name: a unique identifier for this matrix (abstraction).
-- Interface Spec: String in LQL notation (like Java) describing available methods.
+- Interface Spec: String in [LQL notation](lql) (like Java) describing available methods.
 - Implementations: array of one or more `implementation` entries.
 - Tests: array of `test` (Stimulus Sheets) or `testFromJUnit` elements (JUnit Test Class Source).
 - (Optional): `<dependencies>` in terms of artifact coordinates (e.g., for benchmarks).
@@ -548,6 +548,8 @@ action(name: 'select', type: 'Search') {
 }
 ```
 
+See also: [LQL notation](lql)
+
 #### Code Generation
 
 ```groovy
@@ -781,6 +783,121 @@ action(name: "ActionName") {
 - `dependsOn 'previousAction'` — ensure ordering and data flow.
 - `${stimulusMatrix.lql}` — interpolation for prompts/queries (interface spec as string; see Groovy String templating).
 - Variable/parameter references in tests: `?paramName`.
+
+Below is a formal EBNF (Extended Backus-Naur Form) grammar for the LASSO Scripting Language (LSL), based on the constructs extracted from your examples. This grammar describes the high-level structure and main elements only; some Groovy/DSL expression flexibility is not strictly captured, as LSL is an embedded DSL, but this grammar covers all primary declarations, actions, and blocks as seen in your scripts.
+
+---
+
+### (Partial) Formal Grammar (EBNF) for LSL
+
+```ebnf
+LSL         = { DataSourceDecl }, { TopLevelVarDecl }, StudyDecl, { StudyDecl } ;
+
+DataSourceDecl = "dataSource" StringLiteral ;
+
+TopLevelVarDecl = "def" Identifier "=" Expression ;
+
+StudyDecl   = "study" "(" "name" ":" StringLiteral ")" "{" { StudyBlock } "}" ;
+
+StudyBlock  = ProfileDecl
+| ActionDecl
+| TopLevelVarDecl
+| Comment ;
+
+ProfileDecl = "profile" "(" StringLiteral ")" "{" { ProfileBlock } "}" ;
+
+ProfileBlock = ( ScopeDecl | EnvironmentDecl ) ;
+
+ScopeDecl     = "scope" "(" StringLiteral ")" "{" "type" "=" StringLiteral "}" ;
+
+EnvironmentDecl = "environment" "(" StringLiteral ")" "{" "image" "=" StringLiteral "}" ;
+
+ActionDecl  = "action" "(" "name" ":" StringLiteral [ "," "type" ":" StringLiteral ] ")" "{"
+{ ActionConfig }
+[ ExecuteBlock ]
+"}" ;
+
+ActionConfig = [ "dependsOn" StringLiteral ]
+| [ "include" StringLiteral ]
+| [ "features" "=" ListLiteral ]
+| [ "maxAdaptations" "=" IntegerLiteral ]
+| [ "adapterStrategy" "=" StringLiteral ]
+| [ "profile" "(" StringLiteral ")" ]
+| [ "javaVersion" "=" StringLiteral ]
+| [ CustomBlock ]
+| [ CustomAssign ]
+;
+
+ExecuteBlock = "execute" "{" { StimulusMatrixDecl | Expression } "}" ;
+
+StimulusMatrixDecl = "stimulusMatrix" "("
+StringLiteral ","  // Matrix Name
+StringLiteral ","  // LQL Spec
+ImplList ","       // Implementations
+TestList           // Tests
+["," DependencyList ] // (optional) dependencies
+")" ;
+
+ImplList     = "[" { Implementation } { "," Implementation } "]" ;
+Implementation = "implementation" "(" StringLiteral "," StringLiteral [ "," StringLiteral ] ")" ;
+
+TestList     = "[" { TestDecl | TestFromJUnit } { "," (TestDecl | TestFromJUnit) } "]" ;
+
+TestDecl     = "test" "(" "name" ":" StringLiteral { "," ParamAssign } ")" "{" { RowDecl } "}" ;
+ParamAssign  = Identifier ":" Expression ;
+
+RowDecl      = "row" RowArgList ;
+RowArgList   = [ Expression { "," Expression } ] ;
+
+TestFromJUnit = "testFromJUnit" "(" StringLiteral ")" ;
+
+ListLiteral  = "[" [ Expression { "," Expression } ] "]" ;
+
+CustomBlock  = ( "prompt" | "query" ) Block ;
+CustomAssign = Identifier "=" Expression ;
+
+DependencyList = Identifier ;
+
+Expression   = /* Any valid Groovy/DSL expression or code block */ ;
+Block        = "{" { Expression | Statement } "}" ;
+Statement    = /* Any valid Groovy/DSL statement */ ;
+
+IntegerLiteral = digit { digit } ;
+StringLiteral  = "'" /* chars */ "'" | '"' /* chars */ '"' ;
+Identifier     = letter { letter | digit | "_" } ;
+
+/* Comments can be single-line '//' or multi-line '/* ... * /' */
+Comment        = "/*" { ANY_CHAR } "*/"
+| "//" { ANY_CHAR } ;
+
+/* Core lexical rules */
+digit      = '0'..'9' ;
+letter     = 'A'..'Z' | 'a'..'z' ;
+```
+
+
+---
+
+Explanation and Coverage
+
+- dataSource as a top-level declaration.
+- study block containing profiles, actions, variables.
+- profile block (scope, environment).
+- action blocks, with possible config and an optional `execute` block (or other lifecycle blocks).
+- stimulusMatrix: name, interface (LQL), implementation list, test list, optional dependencies.
+- implementation, test, testFromJUnit, row.
+- prompt/query custom function blocks inside actions for advanced configuration.
+- Groovy expressions are loosely captured since LSL is a DSL within Groovy.
+- Lists and parameters as needed (for features, etc.).
+
+---
+
+Notes
+
+- LSL is fundamentally a Groovy-DSL, so any valid Groovy code or block can usually appear as an `Expression`. The grammar above formalizes all strictly LSL-specific elements and typical extension points.
+- Advanced configurations (e.g., parameterization in `test`) are supported as key-value assignments.
+- Optional or complex code logic in custom blocks (like `prompt { ... }`) can contain arbitrary valid Groovy statements and are treated as open blocks (`Block`).
+- Comments and variable assignments are accepted at the top level and inside studies/actions.
 
 ---
 

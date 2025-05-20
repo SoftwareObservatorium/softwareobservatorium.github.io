@@ -1,0 +1,8 @@
+{
+  "label": "Beginners Guide",
+  "position": 2,
+  "link": {
+    "type": "generated-index",
+    "description": "Beginner-friendly Guide for LASSO Scripting Language (LSL)"
+  }
+}

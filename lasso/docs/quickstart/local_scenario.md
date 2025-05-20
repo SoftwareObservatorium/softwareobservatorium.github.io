@@ -1,8 +1,8 @@
 ---
-sidebar_position: 2
+sidebar_position: 3
 ---
 
-# Quickstart: Submit Your First LSL Script
+# Local Quickstart: Submit Your First LSL Script
 
 ## Start the LASSO Platform and its Executable Corpus
 

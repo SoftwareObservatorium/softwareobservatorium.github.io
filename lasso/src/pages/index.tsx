@@ -182,7 +182,7 @@ docker compose up`}
                 <p>
                   Wait until all services started (LASSO platform, Code Search Index and Artifact Repository) and then open LASSO's dashboard at{' '}
                   <a href="http://localhost:10222/webui/">http://localhost:10222/webui/</a> (login: admin / admin123).
-                  See <a href="./docs/quickstart/scenario">5 Minute Tutorial</a> for details, and{' '}
+                  See <a href="./docs/category/5-minute-tutorial">5 Minute Tutorial</a> for details, and{' '}
                   <a href="./labs">Labs (Playground)</a> for more options.
                 </p>
 

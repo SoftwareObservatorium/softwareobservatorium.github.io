@@ -6,13 +6,13 @@ LASSO's Query Language (LQL) enables a powerful and precise way to search for co
 
 **Learn More & Get Started:**
 
-*   [**Try the Interface-driven Code Search**](lasso/search) -  Start searching with LQL now.
-*   [**LQL Documentation**](docs/datastructures/lql) -  Deep dive into LQL syntax, operators, and advanced querying techniques.
+*   [**Try the Interface-driven Code Search**](/web/lasso/search) -  Start searching with LQL now.
+*   [**LQL Documentation**](/web/docs/datastructures/lql) -  Deep dive into LQL syntax, operators, and advanced querying techniques.
 
 ### Examples
 
-* [**Base64 encoding**](lasso/search?example=BASE64)
-* [**Stack**](lasso/search?example=STACK)
+* [**Base64 encoding**](/web/lasso/search?example=BASE64)
+* [**Stack**](/web/lasso/search?example=STACK)
 
 ---
 
@@ -22,14 +22,14 @@ LASSO's Sequence Sheet Notation (SSN) allows for a unique form of code search ba
 
 **Learn More & Get Started:**
 
-*   [**Try the Test-Driven Code Search**](lasso/ssn?recommendation=search) - Begin exploring code based on your SSN test specifications.
-*   [**SSN Documentation**](docs/datastructures/ssn) - Understand the structure and capabilities of SSN for defining test specifications.
+*   [**Try the Test-Driven Code Search**](/web/lasso/ssn?recommendation=search) - Begin exploring code based on your SSN test specifications.
+*   [**SSN Documentation**](/web/docs/datastructures/ssn) - Understand the structure and capabilities of SSN for defining test specifications.
 
 ### Examples
 
-* [**Base64 encoding**](lasso/ssn?recommendation=search&example=BASE64)
-* [**Base64 encoding (Parameterized Tests)**](lasso/ssn?recommendation=search&example=BASE64_PARAMETERIZED)
-* [**Stack**](lasso/ssn?recommendation=search&example=STACK)
+* [**Base64 encoding**](/web/lasso/ssn?recommendation=search&example=BASE64)
+* [**Base64 encoding (Parameterized Tests)**](/web/lasso/ssn?recommendation=search&example=BASE64_PARAMETERIZED)
+* [**Stack**](/web/lasso/ssn?recommendation=search&example=STACK)
 
 ## Research
 

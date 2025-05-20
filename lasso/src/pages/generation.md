@@ -6,14 +6,14 @@ LASSO's Sequence Sheet Notation (SSN) allows for a unique form of code generatio
 
 **Learn More & Get Started:**
 
-*   [**Try the Test-Driven Code Generation**](lasso/ssn?recommendation=gen) - Begin generating code based on your SSN test specifications.
-*   [**SSN Documentation**](docs/datastructures/ssn) - Understand the structure and capabilities of SSN for defining test specifications.
+*   [**Try the Test-Driven Code Generation**](/web/lasso/ssn?recommendation=gen) - Begin generating code based on your SSN test specifications.
+*   [**SSN Documentation**](/web/docs/datastructures/ssn) - Understand the structure and capabilities of SSN for defining test specifications.
 
 ### Examples
 
-* [**Base64 encoding**](lasso/ssn?recommendation=gen&example=BASE64)
-* [**Base64 encoding (Parameterized Tests)**](lasso/ssn?recommendation=gen&example=BASE64_PARAMETERIZED)
-* [**Stack**](lasso/ssn?recommendation=gen&example=STACK)
+* [**Base64 encoding**](/web/lasso/ssn?recommendation=gen&example=BASE64)
+* [**Base64 encoding (Parameterized Tests)**](/web/lasso/ssn?recommendation=gen&example=BASE64_PARAMETERIZED)
+* [**Stack**](/web/lasso/ssn?recommendation=gen&example=STACK)
 
 ## Research
 

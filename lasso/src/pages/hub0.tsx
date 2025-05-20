@@ -151,7 +151,7 @@ const HubPage = () => {
                   <Typography sx={{ margin: 2 }} variant="h5" component="div">LSL Pipeline Viewer<Typography variant="h6" component="div">Explore the study and actions</Typography></Typography>
                   <Typography sx={{ color: 'text.secondary', mb: 1.5 }}>{HubExamples.MAP[currentExampleId].description}</Typography>
                   <Typography variant="h5" component="div">
-                    <Button sx={{ float: "right" }} onClick={(event) => handleTryClick()}>Try Now!</Button>
+                    {/* <Button sx={{ float: "right" }} onClick={(event) => handleTryClick()}>Try Now!</Button> */}
                     <Editor
                       height="500px"
                       defaultLanguage="java"

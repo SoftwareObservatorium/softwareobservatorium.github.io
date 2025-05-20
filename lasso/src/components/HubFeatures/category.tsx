@@ -42,6 +42,12 @@ const statusColor: Record<string, "default" | "primary" | "success" | "warning" 
     PENDING: "primary",
 };
 
+const HIDE_LIST: string[] = [
+    "7da59a7d-561e-4d2f-9ebf-42c3aba0d78c",
+    "15fb7eea-8629-4c63-a722-b3e25c4c8a86",
+    "4744ac3d-b3e3-4c45-8222-abf0107fdd84"
+];
+
 export const ScriptHub: React.FC = () => {
     const [scripts, setScripts] = useState<ScriptInfo[]>([]);
     const [loading, setLoading] = useState(false);
@@ -67,8 +73,14 @@ export const ScriptHub: React.FC = () => {
             }
         ).then(
             () => {
-                LassoService.getHubScripts() // or another default category if needed
-                    .then(res => setScripts(res.data))
+                LassoService.getHubScripts()
+                    .then(res => {
+                        const myScripts: ScriptInfo[] = res.data;
+                        const filtered = myScripts.filter(script => !HIDE_LIST.find(id => id === script.executionId));
+
+                        console.log(filtered);
+                        setScripts(filtered);
+                    })
                     .catch(err => setError(err.message ?? String(err)))
                     .finally(() => setLoading(false));
             }

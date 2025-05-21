@@ -161,6 +161,8 @@ Configures runtime context (typically docker/image for Java analysis and builds)
 
 ### 4. Actions
 
+(Note: A list of available actions on LASSO's playground service is available [here](/web/lasso/actions))
+
 `action` and Action Types
 
 An action represents a step or task in the LSL pipeline. They can create SMs, execute code, generate code/tests, perform search/filtering, integrate external tools etc.

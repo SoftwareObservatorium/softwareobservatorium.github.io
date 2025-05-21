@@ -14,6 +14,7 @@ import LassoService from '@site/src/services/LassoService';
 import AuthService from '@site/src/services/AuthService';
 import { useHistory, useLocation } from '@docusaurus/router';
 import GraphComponent from '@site/src/components/Graph/graph';
+import ActionList from '@site/src/components/actions/actions';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -144,10 +145,10 @@ const SubmitPage = () => {
     <Layout>
       <Head>
         <title>LSL Pipeline Editor</title>
-        <meta name="description" content="LSL Editor" />
+        <meta name="description" content="LSL Script Editor" />
       </Head>
 
-      <Typography sx={{ margin: 2 }} variant="h5" component="div">Editor<Typography variant="h6" component="div">Write and Submit a LSL Script to the Public LASSO Demo Platform</Typography>
+      <Typography sx={{ margin: 2 }} variant="h5" component="div">LSL Script Editor<Typography variant="h6" component="div">Write and Submit a LSL Pipeline Script to LASSO's Playground Platform</Typography>
 
       </Typography>
 
@@ -166,6 +167,7 @@ const SubmitPage = () => {
             <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
               <Tabs value={value} onChange={handleChange} aria-label="basic tabs example">
                 <Tab label="LSL Pipeline" {...a11yProps(0)} />
+                <Tab label="Available Actions" {...a11yProps(1)} />
                 {/* <Tab label="Graph Viewer" {...a11yProps(1)} /> */}
               </Tabs>
             </Box>
@@ -189,6 +191,9 @@ const SubmitPage = () => {
                 <GraphComponent code={scriptInfo.content} />
               </Typography>
             </CustomTabPanel> */}
+            <CustomTabPanel value={value} index={1}>
+              <ActionList />
+            </CustomTabPanel>
           </Box>
 
 

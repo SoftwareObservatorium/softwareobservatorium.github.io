@@ -13,7 +13,15 @@ import {
     InputAdornment,
     Pagination,
     Stack,
-    Link
+    Link,
+    List,
+    ListItem,
+    ListItemButton,
+    Dialog,
+    DialogTitle,
+    DialogContent,
+    ListItemText,
+    DialogActions
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import { CodeSnippet, SearchQueryRequest, SearchQueryResponse, TextualSearch } from '@site/src/services/models';
@@ -23,8 +31,16 @@ import Head from '@docusaurus/Head';
 import Layout from '@theme/Layout';
 import { TDSExamples } from '@site/src/components/HubFeatures/HubFeatures';
 import AuthService from '@site/src/services/AuthService';
+import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
 
 const RESULTS_PER_PAGE = 10;
+
+interface DataSource {
+    id: string;
+    name: string;
+    description?: string;
+    url?: string;
+}
 
 const CodeSearchPage: React.FC = () => {
     // Only run in browser context
@@ -69,6 +85,13 @@ const CodeSearchPage: React.FC = () => {
     const [page, setPage] = useState(1);
     const [total, setTotal] = useState(0);
 
+    // New state for dialog and datasources:
+    const [dsDialogOpen, setDsDialogOpen] = useState(false);
+    const [availableDataSources, setAvailableDataSources] = useState<DataSource[]>([]);
+    const [dataSourcesLoading, setDataSourcesLoading] = useState(false);
+
+
+
     const sortImplementationsToArray = (implementations: any): any[] => {
         const jsonArray = Array.from(Object.values(implementations));
 
@@ -80,6 +103,31 @@ const CodeSearchPage: React.FC = () => {
         }
 
         return jsonArray;
+    };
+
+    // Helper to open dialog and fetch datasources on-open:
+    const handleOpenDatasourceDialog = async () => {
+        setDsDialogOpen(true);
+        setDataSourcesLoading(true);
+        try {
+            const response = await LassoService.getDataSources();
+            
+            // Now extract: response.data.dataSources, convert to array:
+            const dsMap = response.data.dataSources;
+            const dsArray = Object.values(dsMap) as DataSource[];
+            setAvailableDataSources(dsArray);
+        } catch (error) {
+            // Handle error as you wish (alert, etc)
+            setAvailableDataSources([]);
+        }
+        setDataSourcesLoading(false);
+    };
+    const handleCloseDatasourceDialog = () => setDsDialogOpen(false);
+
+    // When a datasource is selected:
+    const handleSelectDatasource = (selectedId: string) => {
+        setUrlDataSource(selectedId); // This changes which is used for searching
+        setDsDialogOpen(false);
     };
 
     const handleSearch = async () => {
@@ -109,24 +157,24 @@ const CodeSearchPage: React.FC = () => {
         console.log(JSON.stringify(request))
 
         await AuthService.loginDefault().then(
-              (response) => {
+            (response) => {
                 // login successful
                 console.log("Successfully logged in")
 
-                
-              },
-              (error) => {
+
+            },
+            (error) => {
                 const resMessage =
-                  (error.response &&
-                    error.response.data &&
-                    error.response.data.message) ||
-                  error.message ||
-                  error.toString();
-        
+                    (error.response &&
+                        error.response.data &&
+                        error.response.data.message) ||
+                    error.message ||
+                    error.toString();
+
                 // FIXME
                 console.log("Login attempt failed " + error)
-              }
-            )
+            }
+        )
 
         await LassoService.queryImplementationsForDataSource(lassoDataSource, request).then(
             (response) => {
@@ -226,6 +274,20 @@ const CodeSearchPage: React.FC = () => {
                             Search
                         </Button>
                     </Grid>
+
+                    {/* NEW: Datasource selector button  */}
+                    <Grid item>
+                        <Button
+                            variant="outlined"
+                            color="secondary"
+                            onClick={handleOpenDatasourceDialog}
+                            endIcon={<ArrowDropDownIcon />}
+                        >
+                            Datasource: {urlDataSource}
+                        </Button>
+                    </Grid>
+
+                    <Grid item>
                     <Stack direction="row" spacing={1} alignItems="center" sx={{ mt: 1, mb: 3 }}>
                         <Typography variant="body2" color="text.secondary">
                             Learn more about the <b>LQL Query Language</b>:
@@ -239,9 +301,44 @@ const CodeSearchPage: React.FC = () => {
                             Documentation
                         </Link>
                     </Stack>
+                    </Grid>
+
+
                 </Grid>
 
-
+                {/* Datasource selection dialog */}
+                <Dialog open={dsDialogOpen} onClose={handleCloseDatasourceDialog} fullWidth>
+                    <DialogTitle>Select a Datasource</DialogTitle>
+                    <DialogContent dividers>
+                        {dataSourcesLoading ? (
+                            <CircularProgress />
+                        ) : (
+                            <List>
+                                {availableDataSources.map(ds => (
+                                    <ListItem key={ds.id} disablePadding>
+                                        <ListItemButton onClick={() => handleSelectDatasource(ds.id)}>
+                                            <ListItemText
+                                                primary={ds.name}
+                                                secondary={ds.description}
+                                                style={ds.id === urlDataSource ? { fontWeight: 'bold' } : {}}
+                                            />
+                                        </ListItemButton>
+                                    </ListItem>
+                                ))}
+                                {availableDataSources.length === 0 && (
+                                    <Typography color="text.secondary">
+                                        No datasources found.
+                                    </Typography>
+                                )}
+                            </List>
+                        )}
+                    </DialogContent>
+                    <DialogActions>
+                        <Button onClick={handleCloseDatasourceDialog} color="primary">
+                            Close
+                        </Button>
+                    </DialogActions>
+                </Dialog>
 
                 <div style={{ minHeight: 320, marginTop: 40 }}>
                     {!loading && searched && total > 0 && (

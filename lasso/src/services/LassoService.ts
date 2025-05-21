@@ -29,6 +29,14 @@ const getHubScriptsByUser = (user: string) => {
   return axios.get(`${API_URL}api/v1/lasso/hub/user/${user}`, { headers: authHeader() });
 };
 
+const getDataSources = () => {
+  return axios.get(`${API_URL}api/v1/lasso/datasource/info`, { headers: authHeader() });
+};
+
+const getActions = () => {
+  return axios.get(`${API_URL}api/v1/lasso/info`, { headers: authHeader() });
+};
+
 const getHubScriptsByTag = (tag: string) => {
   return axios.get(`${API_URL}api/v1/lasso/hub/tag/${tag}`, { headers: authHeader() });
 };
@@ -62,6 +70,8 @@ const LassoService = {
     retrieveParquet,
     retrieveParquetUrl,
     queryImplementationsForDataSource,
+    getDataSources,
+    getActions,
     API_URL
 };
 

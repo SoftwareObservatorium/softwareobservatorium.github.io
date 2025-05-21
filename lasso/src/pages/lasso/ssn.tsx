@@ -236,7 +236,7 @@ export default function SequenceSheetEditorsPage() {
                 console.log("Successfully executed. Execution ID is " + lslResponse.executionId)
 
                 // redirect to result page
-                history.push(`./result?executionId=${lslResponse.executionId}`)
+                history.push(`/web/lasso/result?executionId=${lslResponse.executionId}`)
             },
             (error) => {
                 const resMessage =
